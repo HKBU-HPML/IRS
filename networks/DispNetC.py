@@ -120,6 +120,8 @@ class DispNetC(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+
+        #self.freeze()
         
     def forward(self, input):
 
@@ -212,13 +214,19 @@ class DispNetC(nn.Module):
         #     return pr0
 
         disps = (pr0, pr1, pr2, pr3, pr4, pr5, pr6)
+
+
         # can be chosen outside
         if self.get_features:
             features = (iconv5, iconv4, iconv3, iconv2, iconv1, iconv0)
             return disps, features
         else:
             return disps
-        
+ 
+    def freeze(self):
+        for name, param in self.named_parameters():
+            if ('weight' in name) or ('bias' in name):
+                param.requires_grad = False
 
     def weight_parameters(self):
         return [param for name, param in self.named_parameters() if 'weight' in name]

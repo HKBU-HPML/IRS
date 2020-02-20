@@ -30,9 +30,17 @@ class SIRSDataset(Dataset):
         self.scale_size = scale_size
         self.fx = 480.0
         self.fy = 480.0
+        self.sx = 540.0
+        self.sy = 960.0
+
+    def get_scale_size(self):
+        return self.scale_size
 
     def get_focal_length(self):
         return self.fx, self.fy
+
+    def get_img_size(self):
+        return self.sx, self.sy
 
     def __len__(self):
         return len(self.imgPairs)
@@ -89,11 +97,11 @@ class SIRSDataset(Dataset):
                 # transform visualization normal to its true value
                 gt_norm = gt_norm * 2.0 - 1.0
 
-                ## fix opposite normal
-                #m = gt_norm >= 0
-                #m[:,:,0] = False
-                #m[:,:,1] = False
-                #gt_norm[m] = - gt_norm[m]
+                # fix opposite normal
+                m = gt_norm >= 0
+                m[:,:,0] = False
+                m[:,:,1] = False
+                gt_norm[m] = - gt_norm[m]
 
             return gt_norm
 

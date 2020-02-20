@@ -9,9 +9,13 @@ from networks.DispNetCSS import DispNetCSS
 from networks.DispNetCSRes import DispNetCSRes
 from networks.DispNormNet import DispNormNet
 from networks.DNFusionNet import DNFusionNet
+from networks.DToNNet import DToNNet
+from networks.DToNFusionNet import DToNFusionNet
+from networks.DNIRRNet import DNIRRNet
 from networks.DispAngleNet import DispAngleNet
+from networks.DToNNet import DToNNet
 from networks.stackhourglass import PSMNet
-from networks.GANet_deep import GANet
+#from networks.GANet_deep import GANet
 from networks.NormNetS import NormNetS
 #from networks.NormNetC import NormNetC
 #from networks.stackhourglass import PSMNet
@@ -28,11 +32,15 @@ SUPPORT_NETS = {
         'dispnetcs': DispNetCS,
         'dispnetcss': DispNetCSS,
         'psmnet': PSMNet,
-        'ganet':GANet,
+        #'ganet':GANet,
         'dispnormnet':DispNormNet,
         'dnfusionnet':DNFusionNet,
+        'dtonnet':DToNNet,
+        'dtonfusionnet':DToNFusionNet,
+        'dnirrnet':DNIRRNet,
         'dispanglenet':DispAngleNet,
         'normnets':NormNetS,
+	'dtonnet':DToNNet,
         #'normnetc':NormNetC,
         #'multicorrnet': MultiCorrNet,
         #'dispnetcorr2': DispNetCorr2,

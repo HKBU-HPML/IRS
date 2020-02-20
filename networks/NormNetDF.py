@@ -14,12 +14,10 @@ from networks.submodules import *
 
 class NormNetDF(nn.Module):
 
-    def __init__(self, lastRelu=False, input_channel=7):
+    def __init__(self, input_channel=7):
         super(NormNetDF, self).__init__()
         
         self.input_channel = input_channel
-        self.batchNorm = False
-        self.lastRelu = lastRelu 
         self.res_scale = 7  # number of residuals
 
         # improved with shrink res-block layers

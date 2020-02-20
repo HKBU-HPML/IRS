@@ -1,10 +1,11 @@
-import re, sys
+import re, sys, array
 import torch
 import torchvision.transforms as transforms
 from skimage import transform
 import random
 import numpy as np
 from torch import nn
+import OpenEXR
 
 __imagenet_stats = {'mean': [0.485, 0.456, 0.406],
                    'std': [0.229, 0.224, 0.225]}
@@ -264,7 +265,7 @@ def scale_disp(disp, output_size=(1, 540, 960)):
     #trans_disp = torch.from_numpy(trans_disp).unsqueeze(1).cuda()
     
     # Using nn.Upsample
-    m = nn.Upsample(size=(540, 960), mode="bilinear")
+    m = nn.Upsample(size=(output_size[-2], output_size[-1]), mode="bilinear")
     trans_disp = m(disp)
 
     trans_disp = trans_disp * (o_w * 1.0 / i_w)
@@ -296,7 +297,7 @@ def scale_norm(norm, output_size=(1, 4, 540, 960), normalize=True):
     ## print('trans shape:', trans_disp.shape)
     #return trans_norm.astype(np.float32)
 
-    m = nn.Upsample(size=(540, 960), mode="bilinear")
+    m = nn.Upsample(size=(int(output_size[-2]), int(output_size[-1])), mode="bilinear")
     norm_disp = m(norm)
     if norm_disp.size()[1] == 4:
         norm_disp[:, -1, :, :] = norm_disp[:, -1, :, :] * (o_w * 1.0 / i_w)
@@ -521,4 +522,21 @@ def load_pfm(filename):
     shape = (height, width, 3) if color else (height, width)
     file.close()
     return np.reshape(data, shape), scale
+
+def save_exr(img, filename):
+    c, h, w = img.shape
+    if c == 1:
+        img = img.reshape(w * h)
+        Gs = array.array('f', img).tostring()
+        
+        out = OpenEXR.OutputFile(filename, OpenEXR.Header(w, h))
+        out.writePixels({'G' : Gs })
+    else:
+        data = np.array(img).reshape(c, w * h)
+        Rs = array.array('f', data[0,:]).tostring()
+        Gs = array.array('f', data[1,:]).tostring()
+        Bs = array.array('f', data[2,:]).tostring()
+    
+        out = OpenEXR.OutputFile(filename, OpenEXR.Header(w, h))
+        out.writePixels({'R' : Rs, 'G' : Gs, 'B' : Bs })
 

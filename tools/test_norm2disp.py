@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from dataloader.EXRloader import save_exr
 import os
 import numpy as np
-
+from utils.preprocess import load_pfm
 
 #init_disp_file = 'test_norm2disp/init_disp.exr'
 #gt_disp_file = 'test_norm2disp/d_401.exr'
@@ -15,23 +15,24 @@ init_disp_file = 'test_norm2disp/init_disp_522.exr'
 gt_disp_file = 'test_norm2disp/d_522.exr'
 gt_norm_file = 'test_norm2disp/n_522.exr'
 
-
 def EPE(gt_disp, disp):
     return F.smooth_l1_loss(gt_disp, disp, size_average=True)
 
-
-init_disp = exr2hdr(init_disp_file)
-init_disp = init_disp[::-1,:,1:2].copy()
-init_disp = init_disp.transpose([2, 0, 1])
-init_disp = init_disp[np.newaxis, :, :, :]
+#init_disp = exr2hdr(init_disp_file)
+#init_disp = init_disp[::-1,:,1:2].copy()
+#init_disp = init_disp.transpose([2, 0, 1])
+#init_disp = init_disp[np.newaxis, :, :, :]
+init_disp, scale = load_pfm(init_disp_file)
+init_disp = init_disp[::-1, :].copy()
 init_disp = torch.from_numpy(init_disp).cuda()
 
 
-gt_disp = exr2hdr(gt_disp_file)
-gt_disp = gt_disp.transpose([2, 0, 1])
-gt_disp = gt_disp[np.newaxis, :, :, :]
+#gt_disp = exr2hdr(gt_disp_file)
+#gt_disp = gt_disp.transpose([2, 0, 1])
+#gt_disp = gt_disp[np.newaxis, :, :, :]
+gt_disp, scale = load_pfm(gt_disp_file)
+gt_disp = gt_disp[::-1, :].copy()
 gt_disp = torch.from_numpy(gt_disp).cuda()
-
 
 gt_norm = exr2hdr(gt_norm_file)
 gt_norm = gt_norm * 2.0 - 1.0

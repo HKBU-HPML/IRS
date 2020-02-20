@@ -333,12 +333,10 @@ def disp2norm(disp, fx, fy):
 
     #nx = -self.fl.fx * dx / torch.abs(disp[:,:,:,1:-1] - self.xc[:,:,:,1:-1] * dx)
     #ny = -self.fl.fy * dy / torch.abs(disp[:,:,1:-1,:] - self.yc[:,:,1:-1,:] * dy)
-    divider_nx = torch.abs(disp[:,:,:,1:-1] - xc[:,:,:,1:-1] * dx)
-    divider_ny = torch.abs(disp[:,:,1:-1,:] - yc[:,:,1:-1,:] * dy)
-    nx = fx * dx / (divider_nx + 1e-8)
-    ny = fy * dy / (divider_ny + 1e-8)
-    #nx = fx * dx / (divider_nx)
-    #ny = fy * dy / (divider_ny)
+    divider_nx = torch.clamp(torch.abs(disp[:,:,:,1:-1] - xc[:,:,:,1:-1] * dx), 1e-8, 1e+16)
+    divider_ny = torch.clamp(torch.abs(disp[:,:,1:-1,:] - yc[:,:,1:-1,:] * dy), 1e-8, 1e+16)
+    nx = fx * dx / divider_nx
+    ny = fy * dy / divider_ny
     nz = -torch.ones(n, 1, h, w).float().to(cur_device)
 
     nx = F.pad(nx, (1, 1, 0, 0), 'replicate')
@@ -354,73 +352,201 @@ def disp2norm(disp, fx, fy):
     
     return norm
 
-#class Disp2Norm:
-#    def __init__(self, batch_size, width, height, focus_length):
-#        self.fl = focus_length
-#
-#    def make_grid(self, batch_size, width, height):
-#        x = np.arange(0, width)
-#        y = np.arange(0, height)
-#        xc, yc = np.meshgrid(x, y)
-#
-#        x_coord = torch.from_numpy(xc).cuda().float()
-#        y_coord = torch.from_numpy(yc).cuda().float()
-#
-#        x_coord = width * 0.5 - x_coord
-#        y_coord = height * 0.5 - y_coord
-#
-#        # unsqueeze, final size should be (n, c, h, w)
-#        x_coord = torch.unsqueeze(x_coord, 0)
-#        y_coord = torch.unsqueeze(y_coord, 0)
-#
-#        x_coord = torch.unsqueeze(x_coord, 0)
-#        y_coord = torch.unsqueeze(y_coord, 0)
-#
-#        x_coord = x_coord.expand(batch_size, 1, height, width)
-#        y_coord = y_coord.expand(batch_size, 1, height, width)
-#
-#        return x_coord, y_coord
-#
-#    def disp2norm(self, disp):
-#        # the shape of disp should be (n, c, h, w), and disp should be tensor
-#        n, c, h, w = disp.size()
-#        self.batch_size = n
-#        self.xc, self.yc = self.make_grid(n, w, h)
-#
-#        dx = (disp[:, :, :, :-2] - disp[:, :, :, 2:]) * 0.5
-#        dy = (disp[:, :, :-2, :] - disp[:, :, 2:, :]) * 0.5
-#
-#        #nx = -self.fl.fx * dx / torch.abs(disp[:,:,:,1:-1] - self.xc[:,:,:,1:-1] * dx)
-#        #ny = -self.fl.fy * dy / torch.abs(disp[:,:,1:-1,:] - self.yc[:,:,1:-1,:] * dy)
-#        divider_nx = torch.abs(disp[:,:,:,1:-1] - self.xc[:,:,:,1:-1] * dx)
-#        divider_ny = torch.abs(disp[:,:,1:-1,:] - self.yc[:,:,1:-1,:] * dy)
-#        nx = -self.fl["fx"] * dx / (divider_nx + 1e-16)
-#        ny = -self.fl["fy"] * dy / (divider_ny + 1e-16)
-#        #print "mean of nx:", torch.mean(nx)
-#        #print "mean of ny:", torch.mean(ny)
-#        nz = torch.ones(n, 1, h, w).cuda()
-#
-#        nx = F.pad(nx, (1, 1, 0, 0), 'replicate')
-#        ny = F.pad(ny, (0, 0, 1, 1), 'replicate')
-#
-#        norm = torch.cat((nx, ny, nz), dim=1)
-#        norm = norm / torch.norm(norm, 2, dim=1, keepdim=True)
-#        
-#        return norm
-#
-#    def disp2angle(self, disp):
-#        # the shape of disp should be (n, c, h, w), and disp should be tensor
-#        n, c, h, w = disp.size()
-#
-#        dx = (disp[:, :, :, :-2] - disp[:, :, :, 2:]) * 0.5
-#        dy = (disp[:, :, :-2, :] - disp[:, :, 2:, :]) * 0.5
-#
-#        ax = torch.atan(-self.fl.fx * dx / torch.abs(disp[:,:,:,1:-1] - self.xc[:,:,:,1:-1] * dx))
-#        ay = torch.atan(-self.fl.fy * dy / torch.abs(disp[:,:,1:-1,:] - self.yc[:,:,1:-1,:] * dy))
-#
-#        ax = F.pad(ax, (1, 1, 0, 0), 'replicate')
-#        ay = F.pad(ay, (0, 0, 1, 1), 'replicate')
-#
-#        angle = torch.cat((ax, ay), dim=1)
-#        
-#        return norm
+def vote(norm1, norm2):
+    #normal should be normalized
+    dot = torch.sum(norm1 * norm2, dim=1).unsqueeze(1)
+    dot = torch.clamp(dot, 0, 1)
+    return dot 
+
+def norm_adjust_disp_vote(init_disp, norm, fx=1050.0, fy=1050.0, ori_vote=1.0, k_threshold=0.3):
+    n, c, h, w = init_disp.size()
+    cur_device = init_disp.device
+    xc, yc = make_grid(n, h, w)
+    xc = xc.float().to(cur_device)
+    yc = yc.float().to(cur_device)
+
+    nx = fx * norm[:, 2, :, :] / (norm[:, 0, :, :] + 1e-12)
+    ny = fy * norm[:, 2, :, :] / (norm[:, 1, :, :] + 1e-12)
+    nx = nx.unsqueeze(1)
+    ny = ny.unsqueeze(1)
+
+    nx = F.pad(nx, (2, 2, 2, 2), 'replicate')
+    ny = F.pad(ny, (2, 2, 2, 2), 'replicate')
+    pad_disp = F.pad(init_disp, (1, 1, 1, 1), 'constant', 0.0)
+    xc = -F.pad(xc, (1, 1, 1, 1), 'replicate')
+    yc = -F.pad(yc, (1, 1, 1, 1), 'replicate')
+
+    kx_l = torch.clamp(-1 / (xc + (nx[:,:,1:-1,1:-1] + nx[:,:,1:-1,:-2]) * 0.5 + 1e-12), -k_threshold, k_threshold) 
+    kx_r = torch.clamp( 1 / (xc + (nx[:,:,1:-1,1:-1] + nx[:,:,1:-1, 2:]) * 0.5 + 1e-12), -k_threshold, k_threshold)
+    ky_u = torch.clamp(-1 / (yc + (ny[:,:,1:-1,1:-1] + ny[:,:,:-2,1:-1]) * 0.5 + 1e-12), -k_threshold, k_threshold)
+    ky_d = torch.clamp( 1 / (yc + (ny[:,:,1:-1,1:-1] + ny[:,:, 2:,1:-1]) * 0.5 + 1e-12), -k_threshold, k_threshold)
+
+    disp_l = pad_disp + pad_disp * kx_l
+    disp_r = pad_disp + pad_disp * kx_r
+    disp_u = pad_disp + pad_disp * ky_u
+    disp_d = pad_disp + pad_disp * ky_d
+
+    norm = F.pad(norm, (1, 1, 1, 1), 'constant', 0.0)
+    vote_l = vote(norm[:,:,1:-1,1:-1], norm[:,:,1:-1,2:])
+    vote_r = vote(norm[:,:,1:-1,1:-1], norm[:,:,1:-1,:-2])
+    vote_u = vote(norm[:,:,1:-1,1:-1], norm[:,:,2:,1:-1])
+    vote_d = vote(norm[:,:,1:-1,1:-1], norm[:,:,:-2,1:-1])
+
+    merge_disp = disp_r[:,:,1:-1,:-2] * vote_r + disp_l[:,:,1:-1,2:] * vote_l + disp_d[:,:,:-2,1:-1] * vote_d + disp_u[:,:,2:,1:-1] * vote_u + init_disp * ori_vote
+    merge_disp = merge_disp / ((vote_r + vote_l + vote_d + vote_u + ori_vote) + 1e-12)
+
+    #select =  (merge_disp - init_disp).abs() > (init_disp * 0.5)
+    #merge_disp[select] = init_disp[select]
+
+    #print "mean of init_disp, mean of norm, mean of refined disp:", torch.mean(init_disp).data.item(), torch.mean(norm).data.item(), torch.mean(merge_disp).data.item()
+
+    return merge_disp
+
+class Disp2Norm:
+    def __init__(self, batch_size, width, height, fx, fy):
+        self.fx = fx
+        self.fy = fy
+        self.batch_size = batch_size
+        self.xc, self.yc = self.make_grid(batch_size, width, height)
+
+    def make_grid(self, batch_size, width, height):
+        x = np.arange(0, width)
+        y = np.arange(0, height)
+        x_coord, y_coord = np.meshgrid(x, y)
+
+        x_coord = torch.from_numpy(x_coord).cuda().float()
+        y_coord = torch.from_numpy(y_coord).cuda().float()
+
+        x_coord = width * 0.5 - x_coord
+        y_coord = height * 0.5 - y_coord
+
+        # unsqueeze, final size should be (n, c, h, w)
+        x_coord = torch.unsqueeze(x_coord, 0)
+        y_coord = torch.unsqueeze(y_coord, 0)
+
+        x_coord = torch.unsqueeze(x_coord, 0)
+        y_coord = torch.unsqueeze(y_coord, 0)
+
+        x_coord = x_coord.expand(batch_size, 1, height, width)
+        y_coord = y_coord.expand(batch_size, 1, height, width)
+
+        return x_coord, y_coord
+
+    def disp2norm(self, disp):
+        # the shape of disp should be (n, c, h, w), and disp should be tensor
+        n, c, h, w = disp.size()
+
+        dx = (disp[:, :, :, :-2] - disp[:, :, :, 2:]) * 0.5
+        dy = (disp[:, :, :-2, :] - disp[:, :, 2:, :]) * 0.5
+
+        nx = -self.fx * dx / torch.abs(disp[:,:,:,1:-1] - self.xc[:,:,:,1:-1] * dx)
+        ny = -self.fy * dy / torch.abs(disp[:,:,1:-1,:] - self.yc[:,:,1:-1,:] * dy)
+        nz = torch.ones(n, 1, h, w).cuda()
+
+        nx = F.pad(nx, (1, 1, 0, 0), 'replicate')
+        ny = F.pad(ny, (0, 0, 1, 1), 'replicate')
+
+        norm = torch.cat((nx, ny, nz), dim=1)
+        norm = norm / torch.norm(norm, 2, dim=1, keepdim=True)
+        
+        return norm
+
+    def disp2angle(self, disp):
+        # the shape of disp should be (n, c, h, w), and disp should be tensor
+        n, c, h, w = disp.size()
+
+        dx = (disp[:, :, :, :-2] - disp[:, :, :, 2:]) * 0.5
+        dy = (disp[:, :, :-2, :] - disp[:, :, 2:, :]) * 0.5
+
+        ax = torch.atan(-self.fx * dx / torch.abs(disp[:,:,:,1:-1] - self.xc[:,:,:,1:-1] * dx))
+        ay = torch.atan(-self.fy * dy / torch.abs(disp[:,:,1:-1,:] - self.yc[:,:,1:-1,:] * dy))
+
+        ax = F.pad(ax, (1, 1, 0, 0), 'replicate')
+        ay = F.pad(ay, (0, 0, 1, 1), 'replicate')
+
+        angle = torch.cat((ax, ay), dim=1)
+        
+        return norm
+
+    def norm_adjust_disp(self, init_disp, norm, ori_ratio=0.5, edge_threshold=1):
+        n, c, h, w = init_disp.size()
+
+        nx = self.fx * norm[:, 2:3, :, :] / norm[:, 0:1, :, :] 
+        ny = self.fy * norm[:, 2:3, :, :] / norm[:, 1:2, :, :]
+
+        nx = F.pad(nx, (1, 1, 1, 1), 'replicate')
+        ny = F.pad(ny, (1, 1, 1, 1), 'replicate')
+
+        pad_disp = F.pad(init_disp, (1, 1, 1, 1), 'constant', 0.0)
+        ones = torch.ones([n, c, h, w], dtype=torch.float32).cuda()
+        ones = F.pad(ones, (1, 1, 1, 1), 'constant', 0)
+        xc = -F.pad(self.xc, (1, 1, 1, 1), 'replicate')
+        yc = -F.pad(self.yc, (1, 1, 1, 1), 'replicate')
+
+        disp_l = pad_disp - pad_disp / (xc + nx)
+        disp_r = pad_disp + pad_disp / (xc + nx)
+        disp_u = pad_disp - pad_disp / (yc + ny)
+        disp_d = pad_disp + pad_disp / (yc + ny)
+
+
+        merge_disp = (disp_r[:,:,1:-1,:-2] + disp_l[:,:,1:-1,2:] + disp_d[:,:,:-2,1:-1] + disp_u[:,:,2:,1:-1]) / (ones[:,:,1:-1,:-2] + ones[:,:,1:-1,2:] + ones[:,:,:-2,1:-1] + ones[:,:,2:,1:-1])
+        #merge_disp = (disp_r[:,:,1:-1,:-2] + disp_l[:,:,1:-1,2:]) / (ones[:,:,1:-1,:-2] + ones[:,:,1:-1,2:])
+        #merge_disp = (disp_r[:,:,1:-1,:-2] + disp_d[:,:,:-2,1:-1]) / (ones[:,:,1:-1,:-2] + ones[:,:,:-2,1:-1] + 1e-15)
+
+        #merge_disp[0,0,0,0] = init_disp[0,0,0,0]
+        #merge_disp[0,0,h/2,w/2] = init_disp[0,0,h/2,w/2]
+
+
+        rx = torch.abs(norm[:, 0:1, :, :] / norm[:, 2:3, :, :])
+        ry = torch.abs(norm[:, 1:2, :, :] / norm[:, 2:3, :, :])
+        edge = (rx > edge_threshold) | (ry > edge_threshold)
+        merge_disp[edge] = init_disp[edge]
+
+        if ori_ratio > 0.0:
+            merge_disp = merge_disp * (1 - ori_ratio) + init_disp * ori_ratio
+
+        return merge_disp
+
+    def vote(self, norm1, norm2):
+        #normal should be normalized
+        mul = norm1 * norm2
+        dot = mul[:, 0:1, :, :] + mul[:, 1:2, :, :] + mul[:, 2:3, :, :]
+        dot = torch.clamp(dot, 0, 1)
+        #dot = dot ** 5
+        return dot 
+
+    def norm_adjust_disp_vote(self, init_disp, norm, ori_vote=1.0, k_threshold=0.1):
+        n, c, h, w = init_disp.size()
+
+        nx = self.fx * norm[:, 2:3, :, :] / norm[:, 0:1, :, :] 
+        ny = self.fy * norm[:, 2:3, :, :] / norm[:, 1:2, :, :]
+
+        nx = F.pad(nx, (2, 2, 2, 2), 'replicate')
+        ny = F.pad(ny, (2, 2, 2, 2), 'replicate')
+        pad_disp = F.pad(init_disp, (1, 1, 1, 1), 'constant', 0.0)
+        xc = -F.pad(self.xc, (1, 1, 1, 1), 'replicate')
+        yc = -F.pad(self.yc, (1, 1, 1, 1), 'replicate')
+
+        kx_l = torch.clamp(-1 / (xc + (nx[:,:,1:-1,1:-1] + nx[:,:,1:-1,:-2]) * 0.5), -k_threshold, k_threshold) 
+        kx_r = torch.clamp( 1 / (xc + (nx[:,:,1:-1,1:-1] + nx[:,:,1:-1, 2:]) * 0.5), -k_threshold, k_threshold)
+        ky_u = torch.clamp(-1 / (yc + (ny[:,:,1:-1,1:-1] + ny[:,:,:-2,1:-1]) * 0.5), -k_threshold, k_threshold)
+        ky_d = torch.clamp( 1 / (yc + (ny[:,:,1:-1,1:-1] + ny[:,:, 2:,1:-1]) * 0.5), -k_threshold, k_threshold)
+
+        disp_l = pad_disp + pad_disp * kx_l
+        disp_r = pad_disp + pad_disp * kx_r
+        disp_u = pad_disp + pad_disp * ky_u
+        disp_d = pad_disp + pad_disp * ky_d
+
+        norm = F.pad(norm, (1, 1, 1, 1), 'constant', 0.0)
+        vote_l = self.vote(norm[:,:,1:-1,1:-1], norm[:,:,1:-1,2:])
+        vote_r = self.vote(norm[:,:,1:-1,1:-1], norm[:,:,1:-1,:-2])
+        vote_u = self.vote(norm[:,:,1:-1,1:-1], norm[:,:,2:,1:-1])
+        vote_d = self.vote(norm[:,:,1:-1,1:-1], norm[:,:,:-2,1:-1])
+
+        merge_disp = disp_r[:,:,1:-1,:-2] * vote_r + disp_l[:,:,1:-1,2:] * vote_l + disp_d[:,:,:-2,1:-1] * vote_d + disp_u[:,:,2:,1:-1] * vote_u + init_disp * ori_vote
+        merge_disp = merge_disp / (vote_r + vote_l + vote_d + vote_u + ori_vote)
+
+        #select =  (merge_disp - init_disp).abs() > (init_disp * 0.5)
+        #merge_disp[select] = init_disp[select]
+
+        return merge_disp

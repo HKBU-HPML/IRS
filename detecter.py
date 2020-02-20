@@ -10,14 +10,15 @@ import skimage
 #from dispnet import *
 #from networks.dispnet_v2 import *
 import torch.cuda as ct
-from networks.DispNetCSRes import DispNetCSRes
+#from networks.DispNetCSRes import DispNetCSRes
 from net_builder import SUPPORT_NETS, build_net
 from losses.multiscaleloss import multiscaleloss
 import torch.nn.functional as F
 import torch.nn as nn
 #from dataset import DispDataset, save_pfm, RandomRescale
 from dataloader.StereoLoader import StereoDataset
-from utils.preprocess import scale_disp, save_pfm, scale_norm
+from dataloader.SceneFlowLoader import SceneFlowDataset
+from utils.preprocess import scale_disp, save_pfm, save_exr, scale_norm
 from utils.common import count_parameters 
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -36,8 +37,9 @@ cudnn.benchmark = True
 #        ])
 def detect(opt):
 
+    net_name = opt.net
     model = opt.model
-    results_path = opt.rp
+    result_path = opt.rp
     file_list = opt.filelist
     filepath = opt.filepath
 
@@ -50,13 +52,19 @@ def detect(opt):
     #net = DispNetCSRes(ngpu, False, True)
     #net = DispNetCSResWithMono(ngpu, False, True, input_channel=3)
 
+    # build net according to the net name
     if net_name == "psmnet" or net_name == "ganet":
-        net = build_net(net_name)(maxdisp=192)
-    elif net_name == "dispnetc":
-        net = build_net(net_name)(batchNorm=False, lastRelu=True, resBlock=False)
+        net = build_net(net_name)(192)
+    elif net_name in ["normnets", "normnetc"]:
+        net = build_net(net_name)()
+    elif net_name in ["dispnetcres", "dispnetc"]:
+        net = build_net(net_name)(batchNorm=False, lastRelu=True)
     else:
         net = build_net(net_name)(batchNorm=False, lastRelu=True)
+        if net_name in ["dispnormnet", "dnfusionnet", "dtonnet", "dtonfusionnet"]:
+            net.set_focal_length(1050.0, 1050.0)
     net = torch.nn.DataParallel(net, device_ids=devices).cuda()
+    #net.cuda()
 
     model_data = torch.load(model)
     print(model_data.keys())
@@ -71,7 +79,8 @@ def detect(opt):
     net.eval()
 
     batch_size = int(opt.batchSize)
-    test_dataset = StereoDataset(txt_file=file_list, root_dir=filepath, phase='detect')
+    #test_dataset = StereoDataset(txt_file=file_list, root_dir=filepath, phase='detect')
+    test_dataset = SceneFlowDataset(txt_file=file_list, root_dir=filepath, phase='detect')
     test_loader = DataLoader(test_dataset, batch_size = batch_size, \
                         shuffle = False, num_workers = 1, \
                         pin_memory = True)
@@ -80,14 +89,24 @@ def detect(opt):
     #high_res_EPE = multiscaleloss(scales=1, downscale=1, weights=(1), loss='L1', sparse=False)
 
     avg_time = []
-    display = 100
+    display = 50
     warmup = 10
     for i, sample_batched in enumerate(test_loader):
+        #if i > 215:
+        #    break
+
         input = torch.cat((sample_batched['img_left'], sample_batched['img_right']), 1)
+	if opt.disp_on:
+	    target_disp = sample_batched['gt_disp']
+	    target_disp = target_disp.cuda()
+	if opt.norm_on:
+	    target_norm = sample_batched['gt_norm']
+	    target_norm = target_norm.cuda()
+
         # print('input Shape: {}'.format(input.size()))
         num_of_samples = input.size(0)
 
-        output, input_var = detect_batch(net, sample_batched, opt.net, (540, 960))
+        #output, input_var = detect_batch(net, sample_batched, opt.net, (540, 960))
 
         input = input.cuda()
         input_var = torch.autograd.Variable(input, volatile=True)
@@ -98,7 +117,9 @@ def detect(opt):
             output = net(input_var)
         elif opt.net == "dispnetc":
             output = net(input_var)[0]
-        elif opt.net == "dispnormnet":
+        elif opt.net == "normnets":
+            output = net(input_var)
+        elif opt.net in ["dispnormnet", "dtonnet", "dnfusionnet", "dtonfusionnet"]:
             output = net(input_var)
             disp = output[0]
             normal = output[1]
@@ -117,44 +138,58 @@ def detect(opt):
 
         # output = net(input_var)[1]
         if opt.disp_on and not opt.norm_on:
-            #output = scale_disp(output, (output.size()[0], 540, 960))
+            output = scale_disp(output, (output.size()[0], 540, 960))
             disp = output[:, 0, :, :]
-        elif opt.disp_on and opt.norm_on:
-            output = scale_norm(output, (output.size()[0], 540, 960))
-            disp = output[:, 3, :, :]
+        elif opt.norm_on:
+            output = scale_norm(output, (output.size()[0], output.size()[1], 540, 960))
             normal = output[:, :3, :, :]
+            if opt.disp_on:
+                disp = output[:, 3, :, :]
 
         for j in range(num_of_samples):
 
             name_items = sample_batched['img_names'][0][j].split('/')
             # write disparity to file
             if opt.disp_on:
+		output_disp = disp[j]
+		_target_disp = target_disp[j,0]
+		target_valid = _target_disp < 192
+		epe = F.smooth_l1_loss(output_disp[target_valid], _target_disp[target_valid], size_average=True)
+		print('EPE: {}'.format(epe))
+
                 np_disp = disp[j].data.cpu().numpy()
 
                 print('Batch[{}]: {}, average disp: {}({}-{}).'.format(i, j, np.mean(np_disp), np.min(np_disp), np.max(np_disp)))
-                save_name = '_'.join(name_items)# for girl02 dataset
+                save_name = '_'.join(name_items).replace(".png", "_d.png")# for girl02 dataset
                 print('Name: {}'.format(save_name))
+
                 skimage.io.imsave(os.path.join(result_path, save_name),(np_disp*256).astype('uint16'))
+                #save_name = '_'.join(name_items).replace("png", "pfm")# for girl02 dataset
+                #print('Name: {}'.format(save_name))
                 #np_disp = np.flip(np_disp, axis=0)
                 #save_pfm('{}/{}'.format(result_path, save_name), np_disp)
             
             if opt.norm_on:
-                normal = (normal + 1.0) * 0.5
-                normal = normal.transpose(1, 2, 0)
-                save_name = '_'.join(name_items).replace('.png', '_n.png')
+                normal[j] = (normal[j] + 1.0) * 0.5
+                #np_normal = normal[j].data.cpu().numpy().transpose([1, 2, 0])
+                np_normal = normal[j].data.cpu().numpy()
+                #save_name = '_'.join(name_items).replace('.png', '_n.png')
+                save_name = '_'.join(name_items).replace('png', 'exr')
                 print('Name: {}'.format(save_name))
-                skimage.io.imsave(os.path.join(result_path, save_name),(normal*256).astype('uint16'))
+                #skimage.io.imsave(os.path.join(result_path, save_name),(normal*256).astype('uint16'))
                 #save_pfm('{}/{}'.format(result_path, save_name), img)
+		save_exr(np_normal, '{}/{}'.format(result_path, save_name))
+		
 
             print('')
 
-            save_name = '_'.join(name_items).replace(".png", "_left.png")# for girl02 dataset
-            img = input_var[0].detach().cpu().numpy()[:3,:,:]
-            img = np.transpose(img, (1, 2, 0))
-            print('Name: {}'.format(save_name))
-            print('')
-            #save_pfm('{}/{}'.format(result_path, save_name), img)
-            skimage.io.imsave(os.path.join(result_path, save_name),img)
+            #save_name = '_'.join(name_items).replace(".png", "_left.png")# for girl02 dataset
+            #img = input_var[0].detach().cpu().numpy()[:3,:,:]
+            #img = np.transpose(img, (1, 2, 0))
+            #print('Name: {}'.format(save_name))
+            #print('')
+            ##save_pfm('{}/{}'.format(result_path, save_name), img)
+            #skimage.io.imsave(os.path.join(result_path, save_name),img)
 
     print('Evaluation time used: {}'.format(time.time()-s))
         
