@@ -32,6 +32,8 @@ class SceneFlowDataset(Dataset):
         self.fy = 1050.0
         self.img_size = (540, 960)
 
+        self.load_norm = False
+
     def get_focal_length(self):
         return self.fx, self.fy
 

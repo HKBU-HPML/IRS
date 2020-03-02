@@ -11,9 +11,14 @@ from torchvision import transforms
 import time
 from dataloader.EXRloader import load_exr
 
-class SIRSDataset(Dataset):
+#scale_size = (896, 1664)
+#scale_size = (576, 960)
+scale_size = (512, 768)
+#scale_size = (1024, 1536)
 
-    def __init__(self, txt_file, root_dir, phase='train', load_disp=True, load_norm=True, to_angle=False, scale_size=(576, 960)):
+class MiddleburyDataset(Dataset):
+
+    def __init__(self, txt_file, root_dir, phase='train', load_disp=True, load_norm=False, to_angle=False, scale_size=scale_size):
         """
         Args:
             txt_file [string]: Path to the image list
@@ -28,10 +33,10 @@ class SIRSDataset(Dataset):
         self.load_norm = load_norm
         self.to_angle = to_angle
         self.scale_size = scale_size
-        self.fx = 480.0
-        self.fy = 480.0
-        self.sx = 540
-        self.sy = 960
+        self.fx = 1307.839
+        self.fy = 1011.728
+        self.sx = 1924  # height
+        self.sy = 2960  # width
 
     def get_scale_size(self):
         return self.scale_size
@@ -116,6 +121,7 @@ class SIRSDataset(Dataset):
 
         s = time.time()
         if self.phase == 'detect' or self.phase == 'test':
+            img_shape = img_left.shape
             img_left = transform.resize(img_left, self.scale_size, preserve_range=True)
             img_right = transform.resize(img_right, self.scale_size, preserve_range=True)
 

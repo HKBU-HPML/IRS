@@ -56,7 +56,8 @@ def main(opt):
         logger.info('\t'.join(['epoch', 'time_stamp', 'train_loss', 'train_EPE', 'EPE', 'lr']))
         for i in range(start_epoch, end_epoch):
             avg_loss, avg_EPE = trainer.train_one_epoch(i)
-            val_EPE = trainer.validate()
+            with torch.no_grad():
+                val_EPE = trainer.validate()
             is_best = best_EPE < 0 or val_EPE < best_EPE
             if is_best:
                 best_EPE = val_EPE

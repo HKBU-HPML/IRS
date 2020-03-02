@@ -1,12 +1,13 @@
 #net=dispnetcres
 #net=dispnetcss
 #net=dispnormnet
-net=dtonnet
-#net=dispnetc
+#net=dtonnet
+net=dispnetc
 #net=dnfusionnet
 #net=dtonfusionnet
 #net=normnets
 
+#label=middlebury
 #label=sintel
 label=sceneflow
 #label=over_exposure
@@ -46,14 +47,18 @@ devices=0,1,2,3
 #vallist=lists/Sintel_normal_all.list
 #vallist=lists/Sintel_normal_test.list
 dataset=sceneflow
-trainlist=lists/SceneFlow_fl1050_norm.list
-vallist=lists/FlyingThings3D_release_TEST_norm.list
+trainlist=lists/FlyingThings3D_release_TEST.list
+#vallist=lists/FlyingThings3D_release_TEST.list
+vallist=lists/driving_release.list
+#dataset=middlebury
+#trainlist=lists/MB2014_TRAIN.list
+#vallist=lists/MB2014_TRAIN.list
 
 #load_norm=True
 startR=0
 startE=0
 endE=0
-batchSize=16
+batchSize=1
 #model=none
 #model=models/dispnetcss_SIRS/dispnetcss_0_0.pth
 #model=models/dispnetcss_SIRS/model_best.pth
@@ -62,7 +67,7 @@ batchSize=16
 #model=models/dispnormnet-sf-fl1050-d0.928-n16.727.pth
 #model=models/dnfusionnet-sf-fl1050-d0.926-n16.192.pth
 #model=models/dtonfusionnet-sf-fl1050-d0.973-n15.768.pth
-model=models/dtonnet-sf-fl1050-d0.921-n15.6.pth
+#model=models/dtonnet-sf-fl1050-d0.921-n15.6.pth
 #model=models/dtonnet-flying/dtonnet_2_0.pth
 #model=models/dtonnet-sceneflow/dtonnet_0_9.pth
 #model=data/cvpr2020/models/dispnetc-sf-fl1050-d1.09.pth
@@ -78,7 +83,8 @@ model=models/dtonnet-sf-fl1050-d0.921-n15.6.pth
 #model=models/multicorrnet/multicorrnet_0_3.pth
 #model=models/dispnetc_ue_norm2/model_best.pth
 #model=models/${net}-ft-sintel/model_best.pth
-#CUDA_VISIBLE_DEVICES=1 
+#model=models/dtonnet-irs/dtonnet_2_19.pth
+model=models/dispnetc-irs/dispnetc_2_19.pth
 python main.py --cuda --net $net --loss $loss --lr $lr \
                --outf $outf_model --logFile $logf \
                --devices $devices --batch_size $batchSize \

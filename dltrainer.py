@@ -12,6 +12,7 @@ from net_builder import build_net
 from dataloader.SceneFlowLoader import SceneFlowDataset
 from dataloader.SIRSLoader import SIRSDataset
 from dataloader.SintelLoader import SintelDataset
+from dataloader.MiddleburyLoader import MiddleburyDataset
 from dataloader.GANet.data import get_training_set, get_test_set
 from utils.AverageMeter import AverageMeter
 from utils.common import logger
@@ -52,6 +53,9 @@ class DisparityTrainer(object):
         if self.dataset == 'sceneflow':
             train_dataset = SceneFlowDataset(txt_file = self.trainlist, root_dir = self.datapath, phase='train')
             test_dataset = SceneFlowDataset(txt_file = self.vallist, root_dir = self.datapath, phase='test')
+        if self.dataset == 'middlebury':
+            train_dataset = MiddleburyDataset(txt_file = self.trainlist, root_dir = self.datapath, phase='train')
+            test_dataset = MiddleburyDataset(txt_file = self.vallist, root_dir = self.datapath, phase='test')
 	if self.dataset == 'sintel':
 	    train_dataset = SintelDataset(txt_file = self.trainlist, root_dir = self.datapath, phase='train')
 	    test_dataset = SintelDataset(txt_file = self.vallist, root_dir = self.datapath, phase='test')
@@ -68,7 +72,7 @@ class DisparityTrainer(object):
                                 shuffle = True, num_workers = datathread, \
                                 pin_memory = True)
         
-        self.test_loader = DataLoader(test_dataset, batch_size = self.batch_size / 4, \
+        self.test_loader = DataLoader(test_dataset, batch_size = self.batch_size, \
                                 shuffle = False, num_workers = datathread, \
                                 pin_memory = True)
         self.num_batches_per_epoch = len(self.train_loader)
@@ -391,29 +395,37 @@ class DisparityTrainer(object):
                     target_angle = sample_batched['gt_angle']
                     target_angle = target_angle.cuda()
                     target_angle = torch.autograd.Variable(target_angle, requires_grad=False)
-                else:
-                    target_norm = sample_batched['gt_norm']
-                    target_norm = target_norm.cuda()
-                    target_norm = torch.autograd.Variable(target_norm, requires_grad=False)
+                #else:
+                #    target_norm = sample_batched['gt_norm']
+                #    target_norm = target_norm.cuda()
+                #    target_norm = torch.autograd.Variable(target_norm, requires_grad=False)
 
             if self.net_name in ["dispnormnet", "dtonfusionnet", 'dnfusionnet', 'dnirrnet', 'dtonnet']:
                 disp, normal = self.net(input_var)
-                size = disp.size()
 
                 # scale the result
                 disp_norm = torch.cat((normal, disp), 1)
-                disp_norm = scale_norm(disp_norm, (size[0], 4, self.img_height, self.img_width), True)
+
+                # upsampling the predicted disparity map
+                size = target_disp.size()
+                disp_norm = scale_norm(disp_norm, (size[0], 4, size[-2], size[-1]), True)
+
+                ## upsampling the GT disparity map
+                #size = disp_norm.size()
+                #m = torch.nn.Upsample(size=(int(size[-2]), int(size[-1])), mode="bilinear")
+                #origin_width = target_disp.size()[-1]
+                #target_disp = m(target_disp) * size[-1] / origin_width
+
                 disp = disp_norm[:, 3, :, :].unsqueeze(1)
                 normal = disp_norm[:, :3, :, :]
 
 		# normalize the surface normal
 		#normal = normal / torch.norm(normal, 2, dim=1, keepdim=True) 
 
-		valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
+		#valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
 
-                print(normal.size(), target_norm.size())
                 #norm_EPE = self.epe(normal, target_disp[:, :3, :, :]) 
-                norm_EPE = F.mse_loss(normal[valid_norm_idx], target_norm[valid_norm_idx], size_average=True) * 3.0
+                #norm_EPE = F.mse_loss(normal[valid_norm_idx], target_norm[valid_norm_idx], size_average=True) * 3.0
 
                 #refined_disp = disp.clone()
                 #for ri in range(3):
@@ -422,20 +434,21 @@ class DisparityTrainer(object):
                 #flow2_EPE = self.epe(refined_disp, target_disp)
 
                 flow2_EPE = self.epe(disp, target_disp)
-                norm_angle = angle_diff_norm(normal, target_norm).squeeze()
+                #norm_angle = angle_diff_norm(normal, target_norm).squeeze()
 
-		valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
-		valid_angle_idx = valid_angle_idx.squeeze()
+		#valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
+		#valid_angle_idx = valid_angle_idx.squeeze()
 
-                angle_EPE = torch.mean(norm_angle[valid_angle_idx])
+                #angle_EPE = torch.mean(norm_angle[valid_angle_idx])
 
-                valid_norm += float(torch.sum(valid_angle_idx))
-                angle_lt += float(torch.sum(norm_angle[valid_angle_idx] < angle_thres))
+                #valid_norm += float(torch.sum(valid_angle_idx))
+                #angle_lt += float(torch.sum(norm_angle[valid_angle_idx] < angle_thres))
                 
-                logger.info('percent of < {}: {}.'.format(angle_thres, angle_lt * 1.0 / valid_norm))
+                #logger.info('percent of < {}: {}.'.format(angle_thres, angle_lt * 1.0 / valid_norm))
 
                 #angle_EPE = torch.mean(norm_angle)
-                loss = norm_EPE + flow2_EPE
+                #loss = norm_EPE + flow2_EPE
+                loss = flow2_EPE
 
             elif self.net_name in ["normnets", "normnetc"]:
                 normal = self.net(input_var)
@@ -504,10 +517,13 @@ class DisparityTrainer(object):
             else:
                 output = self.net(input_var)
                 output_net1 = output[0]
+                size = output_net1.size()
                 #output_net1 = output_net1.squeeze(1)
-                #print(output_net1.size())
-                output_net1 = scale_disp(output_net1, (output_net1.size()[0], self.img_height, self.img_width))
-                #output_net1 = torch.from_numpy(output_net1).unsqueeze(1).cuda()
+
+                #output_net1 = scale_disp(output_net1, (size[0], size[-2], size[-1]))
+                m = torch.nn.Upsample(size=(int(size[-2]), int(size[-1])), mode="bilinear")
+                origin_width = target_disp.size()[-1]
+                target_disp = m(target_disp) * size[-1] / origin_width
                 loss = self.epe(output_net1, target_disp)
                 flow2_EPE = self.epe(output_net1, target_disp)
 
@@ -527,17 +543,17 @@ class DisparityTrainer(object):
                 if self.angle_on:
                     if (angle_EPE.data.item() == angle_EPE.data.item()):
                         angle_EPEs.update(angle_EPE.data.item(), input_var.size(0))
-                else:
-                    if (norm_EPE.data.item() == norm_EPE.data.item()):
-                        norm_EPEs.update(norm_EPE.data.item(), input_var.size(0))
-                    if (angle_EPE.data.item() == angle_EPE.data.item()):
-                        angle_EPEs.update(angle_EPE.data.item(), input_var.size(0))
+                #else:
+                #    if (norm_EPE.data.item() == norm_EPE.data.item()):
+                #        norm_EPEs.update(norm_EPE.data.item(), input_var.size(0))
+                #    if (angle_EPE.data.item() == angle_EPE.data.item()):
+                #        angle_EPEs.update(angle_EPE.data.item(), input_var.size(0))
         
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
     
-            if i % 10 == 0:
+            if i % 1 == 0:
                 logger.info('Test: [{0}/{1}]\t Time {2}\t EPE {3}\t norm_EPE {4}\t angle_EPE {5}'
                       .format(i, len(self.test_loader), batch_time.val, flow2_EPEs.val, norm_EPEs.val, angle_EPEs.val))
 

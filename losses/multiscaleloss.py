@@ -23,7 +23,7 @@ def EPE(input_flow, target_flow):
 
     #return 1.0 * F.smooth_l1_loss(input_flow[bg_valid], target_flow[bg_valid], size_average=True) + 0.3 * F.smooth_l1_loss(input_flow[fg_valid], target_flow[fg_valid], size_average=True)
     
-    target_valid = target_flow < 192
+    target_valid = (target_flow < 192)
     return F.smooth_l1_loss(input_flow[target_valid], target_flow[target_valid], size_average=True)
 
     #return F.smooth_l1_loss(input_flow, target_flow, size_average=True)
