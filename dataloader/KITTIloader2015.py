@@ -24,12 +24,12 @@ def dataloader(filepath):
   image = [img for img in os.listdir(filepath+left_fold) if img.find('_10') > -1]
   image.sort()
 
-  val_idx = [1, 6, 26, 38, 43, 49, 67, 81, 89, 109, 122, 129, 132, 141, 152, 159, 171, 179, 184, 187]
-  train_idx = [i for i in range(200) if i not in val_idx]
-  train = [image[i] for i in train_idx]
-  val   = [image[i] for i in val_idx]
-  #train = image
-  #val = image
+  #val_idx = [1, 6, 26, 38, 43, 49, 67, 81, 89, 109, 122, 129, 132, 141, 152, 159, 171, 179, 184, 187]
+  #train_idx = [i for i in range(200) if i not in val_idx]
+  #train = [image[i] for i in train_idx]
+  #val   = [image[i] for i in val_idx]
+  train = image
+  val = image
 
   left_train  = [filepath+left_fold+img for img in train]
   right_train = [filepath+right_fold+img for img in train]

@@ -374,7 +374,7 @@ class DisparityTrainer(object):
         end = time.time()
         valid_norm = 0
         angle_lt = 0
-        angle_thres = 11.25
+        angle_thres = 30.0
         for i, sample_batched in enumerate(self.test_loader):
 
             left_input = torch.autograd.Variable(sample_batched['img_left'].cuda(), requires_grad=False)
@@ -395,10 +395,10 @@ class DisparityTrainer(object):
                     target_angle = sample_batched['gt_angle']
                     target_angle = target_angle.cuda()
                     target_angle = torch.autograd.Variable(target_angle, requires_grad=False)
-                #else:
-                #    target_norm = sample_batched['gt_norm']
-                #    target_norm = target_norm.cuda()
-                #    target_norm = torch.autograd.Variable(target_norm, requires_grad=False)
+                else:
+                    target_norm = sample_batched['gt_norm']
+                    target_norm = target_norm.cuda()
+                    target_norm = torch.autograd.Variable(target_norm, requires_grad=False)
 
             if self.net_name in ["dispnormnet", "dtonfusionnet", 'dnfusionnet', 'dnirrnet', 'dtonnet']:
                 disp, normal = self.net(input_var)
@@ -422,10 +422,10 @@ class DisparityTrainer(object):
 		# normalize the surface normal
 		#normal = normal / torch.norm(normal, 2, dim=1, keepdim=True) 
 
-		#valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
+		valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
 
                 #norm_EPE = self.epe(normal, target_disp[:, :3, :, :]) 
-                #norm_EPE = F.mse_loss(normal[valid_norm_idx], target_norm[valid_norm_idx], size_average=True) * 3.0
+                norm_EPE = F.mse_loss(normal[valid_norm_idx], target_norm[valid_norm_idx], size_average=True) * 3.0
 
                 #refined_disp = disp.clone()
                 #for ri in range(3):
@@ -434,21 +434,20 @@ class DisparityTrainer(object):
                 #flow2_EPE = self.epe(refined_disp, target_disp)
 
                 flow2_EPE = self.epe(disp, target_disp)
-                #norm_angle = angle_diff_norm(normal, target_norm).squeeze()
+                norm_angle = angle_diff_norm(normal, target_norm).squeeze()
 
-		#valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
-		#valid_angle_idx = valid_angle_idx.squeeze()
+		valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
+		valid_angle_idx = valid_angle_idx.squeeze()
 
-                #angle_EPE = torch.mean(norm_angle[valid_angle_idx])
+                angle_EPE = torch.mean(norm_angle[valid_angle_idx])
 
-                #valid_norm += float(torch.sum(valid_angle_idx))
-                #angle_lt += float(torch.sum(norm_angle[valid_angle_idx] < angle_thres))
+                valid_norm += float(torch.sum(valid_angle_idx))
+                angle_lt += float(torch.sum(norm_angle[valid_angle_idx] < angle_thres))
                 
-                #logger.info('percent of < {}: {}.'.format(angle_thres, angle_lt * 1.0 / valid_norm))
+                logger.info('percent of < {}: {}.'.format(angle_thres, angle_lt * 1.0 / valid_norm))
 
-                #angle_EPE = torch.mean(norm_angle)
-                #loss = norm_EPE + flow2_EPE
-                loss = flow2_EPE
+                angle_EPE = torch.mean(norm_angle)
+                loss = norm_EPE + flow2_EPE
 
             elif self.net_name in ["normnets", "normnetc"]:
                 normal = self.net(input_var)
@@ -543,11 +542,11 @@ class DisparityTrainer(object):
                 if self.angle_on:
                     if (angle_EPE.data.item() == angle_EPE.data.item()):
                         angle_EPEs.update(angle_EPE.data.item(), input_var.size(0))
-                #else:
-                #    if (norm_EPE.data.item() == norm_EPE.data.item()):
-                #        norm_EPEs.update(norm_EPE.data.item(), input_var.size(0))
-                #    if (angle_EPE.data.item() == angle_EPE.data.item()):
-                #        angle_EPEs.update(angle_EPE.data.item(), input_var.size(0))
+                else:
+                    if (norm_EPE.data.item() == norm_EPE.data.item()):
+                        norm_EPEs.update(norm_EPE.data.item(), input_var.size(0))
+                    if (angle_EPE.data.item() == angle_EPE.data.item()):
+                        angle_EPEs.update(angle_EPE.data.item(), input_var.size(0))
         
             # measure elapsed time
             batch_time.update(time.time() - end)

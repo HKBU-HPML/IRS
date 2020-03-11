@@ -18,10 +18,10 @@ import numpy as np
 import time
 import math
 from utils.common import load_loss_scheme
-from dataloader import KITTIloader2015 as ls
 from dataloader import KITTILoader as DA
 
 from networks.DispNetCSRes import DispNetCSRes
+from networks.DispNetC import DispNetC
 from losses.multiscaleloss import multiscaleloss
 
 parser = argparse.ArgumentParser(description='PSMNet')
@@ -75,6 +75,8 @@ ngpus = len(devices)
 
 if args.model == 'dispnetcres':
     model = DispNetCSRes(ngpus, False, True)
+if args.model == 'dispnetc':
+    model = DispNetC() 
 else:
     print('no model')
 
@@ -153,7 +155,8 @@ def test(imgL,imgR,disp_true):
         #print(imgL.size())
 
         with torch.no_grad():
-            output_net1, output_net2 = model(torch.cat((imgL, imgR), 1))
+            #output_net1, output_net2 = model(torch.cat((imgL, imgR), 1))
+            output_net2 = model(torch.cat((imgL, imgR), 1))[0]
 
         pred_disp = output_net2.squeeze(1)
         pred_disp = pred_disp.data.cpu()
@@ -161,12 +164,14 @@ def test(imgL,imgR,disp_true):
 
         #computing 3-px error#
         true_disp = disp_true.clone()
+        epe = np.abs(true_disp - pred_disp)
+        epe = torch.mean(epe[true_disp > 0])
         index = np.argwhere(true_disp>0)
         disp_true[index[0][:], index[1][:], index[2][:]] = np.abs(true_disp[index[0][:], index[1][:], index[2][:]]-pred_disp[index[0][:], index[1][:], index[2][:]])
         correct = (disp_true[index[0][:], index[1][:], index[2][:]] < 3)|(disp_true[index[0][:], index[1][:], index[2][:]] < true_disp[index[0][:], index[1][:], index[2][:]]*0.05)      
         torch.cuda.empty_cache()
 
-        return 1-(float(torch.sum(correct))/float(len(index[0])))
+        return 1-(float(torch.sum(correct))/float(len(index[0]))), epe
 
 def adjust_learning_rate(optimizer, epoch):
     if epoch <= 600:
@@ -185,13 +190,16 @@ def main():
 	start_full_time = time.time()
 
         # test on the loaded model
+        total_epe = 0
 	total_test_loss = 0
         for batch_idx, (imgL, imgR, disp_L) in enumerate(TestImgLoader):
-            test_loss = test(imgL,imgR, disp_L)
-            print('Iter %d 3-px error in val = %.3f' %(batch_idx, test_loss*100))
+            test_loss, epe = test(imgL,imgR, disp_L)
+            print('Iter %d 3-px error in val = %.3f, epe:%f.' %(batch_idx, test_loss*100, epe))
             total_test_loss += test_loss
+            total_epe += epe
         min_acc=total_test_loss/len(TestImgLoader)*100
-	print('MIN epoch %d of round %d total test error = %.3f' %(min_epo, min_round, min_acc))
+        min_epe=total_epe/len(TestImgLoader)
+        print('MIN epoch %d of round %d total test error = %.3f, epe: %f.' %(min_epo, min_round, min_acc, min_epe))
 
         start_round = 2
         for r in range(start_round, train_round):
@@ -215,13 +223,16 @@ def main():
 	       
                    ## Test ##
 
+               total_epe = 0
                for batch_idx, (imgL, imgR, disp_L) in enumerate(TestImgLoader):
-                   test_loss = test(imgL,imgR, disp_L)
+                   test_loss, epe = test(imgL,imgR, disp_L)
                    print('Iter %d 3-px error in val = %.3f' %(batch_idx, test_loss*100))
                    total_test_loss += test_loss
+                   total_epe += epe
 
 
-	       print('epoch %d of round %d total 3-px error in val = %.3f' %(epoch, r, total_test_loss/len(TestImgLoader)*100))
+               print('epoch %d of round %d total 3-px error in val = %.3f, epe: %f.' % (epoch, r, total_test_loss/len(TestImgLoader)*100, total_epe/len(TestImgLoader)))
+
 	       if total_test_loss/len(TestImgLoader)*100 < min_acc:
 	    	min_acc = total_test_loss/len(TestImgLoader)*100
 	    	min_epo = epoch

@@ -1,13 +1,17 @@
 # kitti 2015
 python kitti_finetune.py --maxdisp 192 \
-                   --model dispnetcres \
+                   --model dispnetc \
                    --devices 0,1,2,3 \
-                   --datatype 2015 \
-                   --datapath /datasets/kitti/training/ \
-                   --epochs 2000 \
+                   --datatype 2012 \
+                   --datapath /media/ssd1/kitti2012/training/ \
+                   --epochs 0 \
                    --loss loss_configs/dispnetcres_kitti.json \
-                   --savemodel ./trained/dispCSRes-imn-KITTI2015-valavg-split/ \
-                   --loadmodel ./trained/dispCSRes-imn-KITTI2015-valavg-split/best.tar \
+                   --savemodel ./trained/dispnetc \
+                   --loadmodel ./models/dispnetc-ft3d-irs/dispnetc_2_13.pth \
+                   #--loadmodel ./models/dispnetc-irs/dispnetc_2_19.pth \
+                   #--loadmodel ./models/finalize/dispnetc-flying-d0.91.pth \
+                   #--savemodel ./trained/dispCSRes-imn-KITTI2015-valavg-split/ \
+                   #--loadmodel ./trained/dispCSRes-imn-KITTI2015-valavg-split/best.tar \
                    #--loadmodel ./models/dispCSRes-imn/model_best.pth \
                    #--loadmodel  ./models/ShDispCSRes/model_best.pth
                    #--loadmodel /datasets/sh_kittis/ShKittiTrained/dispnet-imagenet-argument/best.tar 

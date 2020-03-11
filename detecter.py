@@ -79,8 +79,8 @@ def detect(opt):
     net.eval()
 
     batch_size = int(opt.batchSize)
-    #test_dataset = StereoDataset(txt_file=file_list, root_dir=filepath, phase='detect')
-    test_dataset = SceneFlowDataset(txt_file=file_list, root_dir=filepath, phase='detect')
+    test_dataset = StereoDataset(txt_file=file_list, root_dir=filepath, phase='detect')
+    #test_dataset = SceneFlowDataset(txt_file=file_list, root_dir=filepath, phase='detect')
     test_loader = DataLoader(test_dataset, batch_size = batch_size, \
                         shuffle = False, num_workers = 1, \
                         pin_memory = True)
@@ -96,12 +96,12 @@ def detect(opt):
         #    break
 
         input = torch.cat((sample_batched['img_left'], sample_batched['img_right']), 1)
-	if opt.disp_on:
-	    target_disp = sample_batched['gt_disp']
-	    target_disp = target_disp.cuda()
-	if opt.norm_on:
-	    target_norm = sample_batched['gt_norm']
-	    target_norm = target_norm.cuda()
+	#if opt.disp_on:
+	#    target_disp = sample_batched['gt_disp']
+	#    target_disp = target_disp.cuda()
+	#if opt.norm_on:
+	#    target_norm = sample_batched['gt_norm']
+	#    target_norm = target_norm.cuda()
 
         # print('input Shape: {}'.format(input.size()))
         num_of_samples = input.size(0)
@@ -152,10 +152,10 @@ def detect(opt):
             # write disparity to file
             if opt.disp_on:
 		output_disp = disp[j]
-		_target_disp = target_disp[j,0]
-		target_valid = _target_disp < 192
-		epe = F.smooth_l1_loss(output_disp[target_valid], _target_disp[target_valid], size_average=True)
-		print('EPE: {}'.format(epe))
+		#_target_disp = target_disp[j,0]
+		#target_valid = _target_disp < 192
+		#epe = F.smooth_l1_loss(output_disp[target_valid], _target_disp[target_valid], size_average=True)
+		#print('EPE: {}'.format(epe))
 
                 np_disp = disp[j].data.cpu().numpy()
 
@@ -163,18 +163,21 @@ def detect(opt):
                 save_name = '_'.join(name_items).replace(".png", "_d.png")# for girl02 dataset
                 print('Name: {}'.format(save_name))
 
-                skimage.io.imsave(os.path.join(result_path, save_name),(np_disp*256).astype('uint16'))
-                #save_name = '_'.join(name_items).replace("png", "pfm")# for girl02 dataset
-                #print('Name: {}'.format(save_name))
-                #np_disp = np.flip(np_disp, axis=0)
-                #save_pfm('{}/{}'.format(result_path, save_name), np_disp)
+                skimage.io.imsave(os.path.join(result_path, save_name), np.round(np_disp*256).astype('uint16'))
+                save_name = '_'.join(name_items).replace("png", "_d.pfm")# for girl02 dataset
+                print('Name: {}'.format(save_name))
+                np_disp = np.flip(np_disp, axis=0)
+                save_pfm('{}/{}'.format(result_path, save_name), np_disp)
+                save_name = '_'.join(name_items).replace("png", "_d.exr")# for girl02 dataset
+                print('Name: {}'.format(save_name))
+                save_exr(np_disp[np.newaxis, :], '{}/{}'.format(result_path, save_name))
             
             if opt.norm_on:
                 normal[j] = (normal[j] + 1.0) * 0.5
                 #np_normal = normal[j].data.cpu().numpy().transpose([1, 2, 0])
                 np_normal = normal[j].data.cpu().numpy()
                 #save_name = '_'.join(name_items).replace('.png', '_n.png')
-                save_name = '_'.join(name_items).replace('png', 'exr')
+                save_name = '_'.join(name_items).replace('png', '_n.exr')
                 print('Name: {}'.format(save_name))
                 #skimage.io.imsave(os.path.join(result_path, save_name),(normal*256).astype('uint16'))
                 #save_pfm('{}/{}'.format(result_path, save_name), img)

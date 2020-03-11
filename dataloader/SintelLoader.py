@@ -32,6 +32,8 @@ class SintelDataset(Dataset):
         self.fy = 1120.0
         self.img_size = (436, 1024)
 
+        self.load_norm = False
+
     def get_focal_length(self):
         return self.fx, self.fy
 
