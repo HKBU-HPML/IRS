@@ -7,15 +7,11 @@ import torch
 import torch.backends.cudnn as cudnn
 import numpy as np
 import skimage
-#from dispnet import *
-#from networks.dispnet_v2 import *
 import torch.cuda as ct
-#from networks.DispNetCSRes import DispNetCSRes
 from net_builder import SUPPORT_NETS, build_net
 from losses.multiscaleloss import multiscaleloss
 import torch.nn.functional as F
 import torch.nn as nn
-#from dataset import DispDataset, save_pfm, RandomRescale
 from dataloader.StereoLoader import StereoDataset
 from dataloader.SceneFlowLoader import SceneFlowDataset
 from utils.preprocess import scale_disp, save_pfm, save_exr, scale_norm
@@ -27,14 +23,6 @@ import psutil
 process = psutil.Process(os.getpid())
 cudnn.benchmark = True
 
-#input_transform = transforms.Compose([
-#        transforms.Normalize(mean=[0,0,0], std=[255,255,255]),
-#        # transforms.Normalize(mean=[0.411,0.432,0.45], std=[1,1,1])
-#        ])
-#
-#target_transform = transforms.Compose([
-#        transforms.Normalize(mean=[0],std=[1.0])
-#        ])
 def detect(opt):
 
     net_name = opt.net
@@ -48,9 +36,6 @@ def detect(opt):
 
     devices = [int(item) for item in opt.devices.split(',')]
     ngpu = len(devices)
-    #net = DispNetC(ngpu, True)
-    #net = DispNetCSRes(ngpu, False, True)
-    #net = DispNetCSResWithMono(ngpu, False, True, input_channel=3)
 
     # build net according to the net name
     if net_name == "psmnet" or net_name == "ganet":
@@ -96,17 +81,9 @@ def detect(opt):
         #    break
 
         input = torch.cat((sample_batched['img_left'], sample_batched['img_right']), 1)
-	#if opt.disp_on:
-	#    target_disp = sample_batched['gt_disp']
-	#    target_disp = target_disp.cuda()
-	#if opt.norm_on:
-	#    target_norm = sample_batched['gt_norm']
-	#    target_norm = target_norm.cuda()
 
         # print('input Shape: {}'.format(input.size()))
         num_of_samples = input.size(0)
-
-        #output, input_var = detect_batch(net, sample_batched, opt.net, (540, 960))
 
         input = input.cuda()
         input_var = torch.autograd.Variable(input, volatile=True)
@@ -136,7 +113,6 @@ def detect(opt):
                     (ct.memory_allocated()/mbytes, ct.max_memory_allocated()/mbytes, ct.memory_cached()/mbytes, ct.max_memory_cached()/mbytes, process.memory_info().rss/mbytes))
                 avg_time = []
 
-        # output = net(input_var)[1]
         if opt.disp_on and not opt.norm_on:
             output = scale_disp(output, (output.size()[0], 540, 960))
             disp = output[:, 0, :, :]
@@ -164,11 +140,11 @@ def detect(opt):
                 print('Name: {}'.format(save_name))
 
                 skimage.io.imsave(os.path.join(result_path, save_name), np.round(np_disp*256).astype('uint16'))
-                save_name = '_'.join(name_items).replace("png", "_d.pfm")# for girl02 dataset
+                save_name = '_'.join(name_items).replace(".png", "_d.pfm")
                 print('Name: {}'.format(save_name))
                 np_disp = np.flip(np_disp, axis=0)
                 save_pfm('{}/{}'.format(result_path, save_name), np_disp)
-                save_name = '_'.join(name_items).replace("png", "_d.exr")# for girl02 dataset
+                save_name = '_'.join(name_items).replace(".png", "_d.exr")
                 print('Name: {}'.format(save_name))
                 save_exr(np_disp[np.newaxis, :], '{}/{}'.format(result_path, save_name))
             
@@ -176,11 +152,13 @@ def detect(opt):
                 normal[j] = (normal[j] + 1.0) * 0.5
                 #np_normal = normal[j].data.cpu().numpy().transpose([1, 2, 0])
                 np_normal = normal[j].data.cpu().numpy()
-                #save_name = '_'.join(name_items).replace('.png', '_n.png')
-                save_name = '_'.join(name_items).replace('png', '_n.exr')
+
+                save_name = '_'.join(name_items).replace('.png', '_n.png')
                 print('Name: {}'.format(save_name))
-                #skimage.io.imsave(os.path.join(result_path, save_name),(normal*256).astype('uint16'))
-                #save_pfm('{}/{}'.format(result_path, save_name), img)
+                skimage.io.imsave(os.path.join(result_path, save_name),(np.transpose(np_normal, (1, 2, 0))*256).astype('uint16'))
+
+                save_name = '_'.join(name_items).replace('.png', '_n.exr')
+                print('Name: {}'.format(save_name))
 		save_exr(np_normal, '{}/{}'.format(result_path, save_name))
 		
 

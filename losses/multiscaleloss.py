@@ -25,6 +25,7 @@ def EPE(input_flow, target_flow):
     
     target_valid = (target_flow < 192)
     return F.smooth_l1_loss(input_flow[target_valid], target_flow[target_valid], size_average=True)
+    #return torch.mean(torch.abs(input_flow[target_valid]-target_flow[target_valid]))
 
     #return F.smooth_l1_loss(input_flow, target_flow, size_average=True)
 

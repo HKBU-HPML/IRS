@@ -25,7 +25,6 @@ class StereoDataset(Dataset):
         self.load_disp = load_disp
         self.load_norm = load_norm
         self.scale_size = scale_size
-        
 
     def __len__(self):
         return len(self.imgPairs)

@@ -2,7 +2,7 @@
 #model=models/psmnet/model_best.pth
 
 dataset=irs
-net=normnets
+net=dtonnet
 
 #model=models/dispnetcres/fadnet.pth
 #model=models/fadnet_sf.pth
@@ -13,15 +13,15 @@ net=normnets
 #model=models/dispnetc-sf-fl1050-d1.09.pth
 #model=models/dtonfusionnet-sf-fl1050-d0.973-n15.768.pth
 #model=models/dispnetc-irs/dispnetc_2_19.pth
-#model=models/dtonnet-irs/dtonnet_2_19.pth
-model=models/normnets-irs/normnets_0_29.pth
+model=models/dtonnet-irs/dtonnet_2_19.pth
+#model=models/normnets-irs/normnets_0_29.pth
 outf=detect_results/${net}-${dataset}/
 
-filelist=lists/IRSDataset_TEST.list
+filelist=lists/test.list
 #filelist=lists/SHAOHUAI_CLEAN_FlyingThings3D_release_TEST.list
 #filelist=lists/${dataset}_test.list
 #filelist=lists/FlyingThings3D_release_TEST_norm.list
 #filelist=lists/real_d435i.list
 filepath=data
 
-CUDA_VISIBLE_DEVICES=2 python detecter.py --model $model --rp $outf --filelist $filelist --filepath $filepath --devices 0 --net ${net} --norm-on 
+CUDA_VISIBLE_DEVICES=2 python detecter.py --model $model --rp $outf --filelist $filelist --filepath $filepath --devices 0 --net ${net} --disp-on --norm-on

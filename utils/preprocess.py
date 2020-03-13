@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 from skimage import transform
 import random
 import numpy as np
-from torch import nn
+import torch.nn.functional as F
 import OpenEXR
 
 __imagenet_stats = {'mean': [0.485, 0.456, 0.406],
@@ -264,9 +264,8 @@ def scale_disp(disp, output_size=(1, 540, 960)):
     #trans_disp = transform.resize(trans_disp, output_size, preserve_range=True).astype(np.float32)
     #trans_disp = torch.from_numpy(trans_disp).unsqueeze(1).cuda()
     
-    # Using nn.Upsample
-    m = nn.Upsample(size=(output_size[-2], output_size[-1]), mode="bilinear")
-    trans_disp = m(disp)
+    # Using F.interpolate
+    trans_disp = F.interpolate(disp, size=[output_size[-2], output_size[-1]])
 
     trans_disp = trans_disp * (o_w * 1.0 / i_w)
     return trans_disp
@@ -297,8 +296,9 @@ def scale_norm(norm, output_size=(1, 4, 540, 960), normalize=True):
     ## print('trans shape:', trans_disp.shape)
     #return trans_norm.astype(np.float32)
 
-    m = nn.Upsample(size=(int(output_size[-2]), int(output_size[-1])), mode="bilinear")
-    norm_disp = m(norm)
+    #m = nn.Upsample(size=(int(output_size[-2]), int(output_size[-1])), mode="bilinear")
+    #norm_disp = m(norm)
+    norm_disp = F.interpolate(norm, size=[output_size[-2], output_size[-1]])
     if norm_disp.size()[1] == 4:
         norm_disp[:, -1, :, :] = norm_disp[:, -1, :, :] * (o_w * 1.0 / i_w)
 
