@@ -133,7 +133,7 @@ def detect(opt):
 		#epe = F.smooth_l1_loss(output_disp[target_valid], _target_disp[target_valid], size_average=True)
 		#print('EPE: {}'.format(epe))
 
-                np_disp = disp[j].data.cpu().numpy()
+                np_disp = disp[j].data.cpu().numpy() * 1.5
 
                 print('Batch[{}]: {}, average disp: {}({}-{}).'.format(i, j, np.mean(np_disp), np.min(np_disp), np.max(np_disp)))
                 save_name = '_'.join(name_items).replace(".png", "_d.png")# for girl02 dataset
