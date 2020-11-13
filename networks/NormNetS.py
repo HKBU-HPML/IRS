@@ -136,7 +136,7 @@ class NormNetS(nn.Module):
         pr0 = self.pred_flow0(iconv0)
 
         normal = pr0 / (torch.norm(pr0, 2, dim=1, keepdim=True) + 1e-8)
-	# img_right_rec = warp(img_left, pr0)
+        # img_right_rec = warp(img_left, pr0)
 
         # if self.training:
         #     # print("finish forwarding.")
@@ -148,9 +148,9 @@ class NormNetS(nn.Module):
         return normal
 
     def weight_parameters(self):
-	return [param for name, param in self.named_parameters() if 'weight' in name]
+        return [param for name, param in self.named_parameters() if 'weight' in name]
 
     def bias_parameters(self):
-	return [param for name, param in self.named_parameters() if 'bias' in name]
+        return [param for name, param in self.named_parameters() if 'bias' in name]
 
 

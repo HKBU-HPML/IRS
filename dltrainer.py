@@ -56,12 +56,12 @@ class DisparityTrainer(object):
         if self.dataset == 'middlebury':
             train_dataset = MiddleburyDataset(txt_file = self.trainlist, root_dir = self.datapath, phase='train')
             test_dataset = MiddleburyDataset(txt_file = self.vallist, root_dir = self.datapath, phase='test')
-	if self.dataset == 'sintel':
-	    train_dataset = SintelDataset(txt_file = self.trainlist, root_dir = self.datapath, phase='train')
-	    test_dataset = SintelDataset(txt_file = self.vallist, root_dir = self.datapath, phase='test')
+        if self.dataset == 'sintel':
+            train_dataset = SintelDataset(txt_file = self.trainlist, root_dir = self.datapath, phase='train')
+            test_dataset = SintelDataset(txt_file = self.vallist, root_dir = self.datapath, phase='test')
         
         self.fx, self.fy = train_dataset.get_focal_length()
-	self.img_height, self.img_width = train_dataset.get_img_size()
+        self.img_height, self.img_width = train_dataset.get_img_size()
         self.scale_height, self.scale_width = test_dataset.get_scale_size()
 
         datathread=4
@@ -385,6 +385,7 @@ class DisparityTrainer(object):
 
             input = torch.cat((left_input, right_input), 1)
             input_var = torch.autograd.Variable(input, requires_grad=False)
+            input_var = F.interpolate(input_var, (576, 960), mode='bilinear')
 
             if self.disp_on:
                 target_disp = sample_batched['gt_disp']
@@ -422,7 +423,7 @@ class DisparityTrainer(object):
 		# normalize the surface normal
 		#normal = normal / torch.norm(normal, 2, dim=1, keepdim=True) 
 
-		valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
+                valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
 
                 #norm_EPE = self.epe(normal, target_disp[:, :3, :, :]) 
                 norm_EPE = F.mse_loss(normal[valid_norm_idx], target_norm[valid_norm_idx], size_average=True) * 3.0
@@ -436,8 +437,8 @@ class DisparityTrainer(object):
                 flow2_EPE = self.epe(disp, target_disp)
                 norm_angle = angle_diff_norm(normal, target_norm).squeeze()
 
-		valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
-		valid_angle_idx = valid_angle_idx.squeeze()
+                valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
+                valid_angle_idx = valid_angle_idx.squeeze()
 
                 angle_EPE = torch.mean(norm_angle[valid_angle_idx])
 
@@ -456,12 +457,12 @@ class DisparityTrainer(object):
                 # scale the result
                 normal = scale_norm(normal, (size[0], 3, self.img_height, self.img_width), True)
 
-		valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
+                valid_norm_idx = (target_norm >= -1.0) & (target_norm <= 1.0)
                 norm_EPE = F.mse_loss(normal[valid_norm_idx], target_norm[valid_norm_idx], size_average=True) * 3.0
 
                 norm_angle = angle_diff_norm(normal, target_norm).squeeze()
-		valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
-		valid_angle_idx = valid_angle_idx.squeeze()
+                valid_angle_idx = valid_norm_idx[:,0,:,:] & valid_norm_idx[:,1,:,:] & valid_norm_idx[:,2,:,:]	
+                valid_angle_idx = valid_angle_idx.squeeze()
 
                 angle_EPE = torch.mean(norm_angle[valid_angle_idx])
                 valid_norm += float(torch.sum(valid_angle_idx))

@@ -6,8 +6,8 @@ import numpy as np
 from torch.autograd import Function
 from torch.nn import init
 from torch.nn.init import kaiming_normal
-from layers_package.resample2d_package.resample2d import Resample2d
-from layers_package.channelnorm_package.channelnorm import ChannelNorm
+#from layers_package.resample2d_package.resample2d import Resample2d
+#from layers_package.channelnorm_package.channelnorm import ChannelNorm
 from networks.DispNetC import DispNetC
 from networks.DispNetS import DispNetS
 from networks.submodules import *
