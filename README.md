@@ -75,7 +75,7 @@ Google Drive: <a href="https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OV
 <iframe width="560" height="315" src="https://www.youtube.com/embed/jThNQFHNU_s" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 -->
 
-[![IRS Dataset and DispNormNet](http://img.youtube.com/vi/jThNQFHNU_s/0.jpg)](http://www.youtube.com/watch?v=jThNQFHNU_s)
+[![IRS Dataset and DTN-Net](http://img.youtube.com/vi/jThNQFHNU_s/0.jpg)](http://www.youtube.com/watch?v=jThNQFHNU_s)
 
 # Usage
 
@@ -100,7 +100,7 @@ sudo apt-get install openexr
 
 ### Dataset
 
-Download IRS dataset from https://pan.baidu.com/s/1VKVVdljNdhoyJ8JdQUCwKQ (BaiduYun). \
+Download IRS dataset from https://pan.baidu.com/s/1iWZt3JklcX5iXdQqotY4uA (BaiduYun). \
 Extract zip files and put them in correct folder:
 ```
 ---- pytorch-dispnet ---- data ---- IRSDataset ---- Home
