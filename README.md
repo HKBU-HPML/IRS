@@ -38,7 +38,7 @@ We designed a novel deep model, DTN-Net, to predict the surface normal map by re
 
 <div align="center">
 <img src="/imgs/DTN-Net.png" width="100%" >
-DispNormNet
+DTN-Net
 </div>
 
 # Paper
