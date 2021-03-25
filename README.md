@@ -37,7 +37,7 @@ We give some sample of different indoor scene characteristics as follows.
 We designed a novel deep model, DTN-Net, to predict the surface normal map by refining the initial one transformed from the predicted disparity. DTN-Net (\underline{D}isparity \underline{T}o \underline{N}ormal Network) is comprised of two modules, **[RD-Net](https://arxiv.org/pdf/1512.02134.pdf)** and NormNetS. First, RD-Net predicts the disparity map for the input stereo images. Then we apply the transformation from disparity to normal in \cite{geonet}, denoted by D2N Transform, to produces the initial coarse normal map. Finally, NormNetS takes the stereo images, the predicted disparity map by RD-Net and the initial normal map as input and predicts the final normal map. The structure of NormNetS is similar to  **[DispNetS](https://arxiv.org/pdf/1512.02134.pdf)** except that the final convolution layer outputs three channels instead of one, as each pixel normal has three dimension $(x,y,z)$.
 
 <div align="center">
-<img src="/imgs/DTN-Net.png" width="100%" >
+<img src="/imgs/DTN-Net.png" width="90%" >
 DTN-Net
 </div>
 
