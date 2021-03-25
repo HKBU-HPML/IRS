@@ -44,7 +44,7 @@ DispNormNet
 # Paper
 Q. Wang<sup>\*,1</sup>, S. Zheng<sup>\*,1</sup>, Q. Yan<sup>\*,2</sup>, F. Deng<sup>2</sup>, K. Zhao<sup>&#8224;,1</sup>, X. Chu<sup>&#8224;,1</sup>.
 
-IRS : A Large Synthetic Indoor Robotics Stereo Dataset for Disparity and Surface Normal Estimation. [\[preprint\]](/pdfs/IRS_indoor_robotics_stereo_dataset.pdf)
+IRS : A Large Synthetic Indoor Robotics Stereo Dataset for Disparity and Surface Normal Estimation. [\[preprint\]](https://arxiv.org/abs/1912.09678)
 
 <font size=2>
 * indicates equal contribution. &#8224; indicates corresponding authors.<br>
