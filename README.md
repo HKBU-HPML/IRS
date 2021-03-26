@@ -81,10 +81,10 @@ Google Drive: <a href="https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OV
 
 ### Dependencies
 
-- [Python2.7](https://www.python.org/downloads/)
-- [PyTorch(1.2.0)](http://pytorch.org)
-- torchvision 0.2.0 (higher version may cause issues)
-- Cuda 10 (https://developer.nvidia.com/cuda-downloads)
+- [Python3](https://www.python.org/downloads/)
+- [PyTorch(1.6.0+)](http://pytorch.org)
+- torchvision 0.5.0+
+- Cuda 10.1 (https://developer.nvidia.com/cuda-downloads)
 
 ### Install
 
@@ -103,10 +103,11 @@ sudo apt-get install openexr
 Download IRS dataset from https://pan.baidu.com/s/1iWZt3JklcX5iXdQqotY4uA (BaiduYun). \
 Extract zip files and put them in correct folder:
 ```
----- pytorch-dispnet ---- data ---- IRSDataset ---- Home
-                                                |-- Office
-                                                |-- Restaurant
-                                                |-- Store
+---- IRS ---- data ---- IRSDataset 
+                           |---- Home
+                           |-- Office
+                           |-- Restaurant
+                           |-- Store
 ```
 
 ### Train
@@ -114,7 +115,7 @@ Extract zip files and put them in correct folder:
 There are configurations for train in "exp_configs" folder. You can create your own configuration file as samples. \
 As an example, following configuration can be used to train a DispNormNet on IRS dataset: \
 \
-/exp_configs/dispnormnet.conf
+/exp_configs/dtonnet.conf
 ```
 net=dispnormnet
 loss=loss_configs/dispnetcres_irs.json
