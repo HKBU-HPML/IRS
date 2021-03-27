@@ -88,7 +88,14 @@ Google Drive: <a href="https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OV
 
 ### Install
 
-Use the following commands to install the environment in Linux
+We recommend using [conda](https://www.anaconda.com/distribution/) for installation: 
+
+```shell
+conda env create -f environment.yml
+```
+
+Install dependencies:
+
 ```
 cd layers_package
 ./install.sh
@@ -103,11 +110,12 @@ sudo apt-get install openexr
 Download IRS dataset from https://pan.baidu.com/s/1iWZt3JklcX5iXdQqotY4uA (BaiduYun). \
 Extract zip files and put them in correct folder:
 ```
----- IRS ---- data ---- IRSDataset 
-                           |---- Home
-                           |-- Office
-                           |-- Restaurant
-                           |-- Store
+data
+└── IRSDataset
+    ├── Home
+    ├── Office
+    ├── Restaurant
+    └── Store
 ```
 
 ### Train
