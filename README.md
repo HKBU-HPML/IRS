@@ -81,10 +81,10 @@ Google Drive: <a href="https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OV
 
 ### Dependencies
 
-- [Python3](https://www.python.org/downloads/)
-- [PyTorch(1.6.0+)](http://pytorch.org)
+- [Python 3.7](https://www.python.org/downloads/)
+- [PyTorch 1.6.0+](http://pytorch.org)
 - torchvision 0.5.0+
-- Cuda 10.1 (https://developer.nvidia.com/cuda-downloads)
+- CUDA 10.1 (https://developer.nvidia.com/cuda-downloads)
 
 ### Install
 
