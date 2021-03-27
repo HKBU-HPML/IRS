@@ -30,17 +30,17 @@ class SIRSDataset(Dataset):
         self.scale_size = scale_size
         self.fx = 480.0
         self.fy = 480.0
-        self.sx = 960.0
-        self.sy = 540.0
+        self.sx = 540
+        self.sy = 960
+
+    def get_scale_size(self):
+        return self.scale_size
 
     def get_focal_length(self):
         return self.fx, self.fy
 
     def get_img_size(self):
-        return self.sy, self.sx
-
-    def get_scale_size(self):
-        return self.scale_size
+        return self.sx, self.sy
 
     def __len__(self):
         return len(self.imgPairs)
@@ -97,11 +97,11 @@ class SIRSDataset(Dataset):
                 # transform visualization normal to its true value
                 gt_norm = gt_norm * 2.0 - 1.0
 
-                ## fix opposite normal
-                #m = gt_norm >= 0
-                #m[:,:,0] = False
-                #m[:,:,1] = False
-                #gt_norm[m] = - gt_norm[m]
+                # fix opposite normal
+                m = gt_norm >= 0
+                m[:,:,0] = False
+                m[:,:,1] = False
+                gt_norm[m] = - gt_norm[m]
 
             return gt_norm
 
@@ -115,15 +115,15 @@ class SIRSDataset(Dataset):
         #print("load data in %f s." % (time.time() - s))
 
         s = time.time()
-        if self.phase == 'detect' or self.phase == 'test':
-            img_left = transform.resize(img_left, self.scale_size, preserve_range=True)
-            img_right = transform.resize(img_right, self.scale_size, preserve_range=True)
+        #if self.phase == 'detect' or self.phase == 'test':
+        #    img_left = transform.resize(img_left, self.scale_size, preserve_range=True)
+        #    img_right = transform.resize(img_right, self.scale_size, preserve_range=True)
 
-            # change image pixel value type ot float32
-            img_left = img_left.astype(np.float32)
-            img_right = img_right.astype(np.float32)
-            #scale = RandomRescale((1024, 1024))
-            #sample = scale(sample)
+        #    # change image pixel value type ot float32
+        #    img_left = img_left.astype(np.float32)
+        #    img_right = img_right.astype(np.float32)
+        #    #scale = RandomRescale((1024, 1024))
+        #    #sample = scale(sample)
 
         if self.phase == 'detect' or self.phase == 'test':
             rgb_transform = default_transform()
