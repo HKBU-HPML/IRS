@@ -4,27 +4,15 @@ import math
 import numpy as np
 import torch.nn.functional as F
 
+
+def SL_EPE(input_flow, target_flow):
+    target_valid = (target_flow < 192) & (target_flow > 0)
+    return F.smooth_l1_loss(input_flow[target_valid], target_flow[target_valid], size_average=True)
+
 def EPE(input_flow, target_flow):
-    # print(input_flow.size(), target_flow.size())
-    # print(target_flow - input_flow)
-    #EPE_map = torch.abs(target_flow - input_flow + 1e-16)# / #, 2, 1)
-    #EPE_map = torch.exp(target_flow - input_flow + 1e-16)# / #, 2, 1)
-    # print(target_flow.sum())
-
-    # shaohuai histogram
-    #EPE_map = torch.norm(target_flow - input_flow + 1e-16, 2, 1)
-    #EPE_map = torch.abs(target_flow - input_flow + 1e-16)# / #, 2, 1)
-    #hist = np.histogram(EPE_map.data.cpu().numpy(), bins=10)
-    #print(hist)
-    # print(input_flow.sum())
-    #thres = 20
-    #bg_valid = target_flow <= thres
-    #fg_valid = (target_flow > thres) & (target_flow < 192)
-
-    #return 1.0 * F.smooth_l1_loss(input_flow[bg_valid], target_flow[bg_valid], size_average=True) + 0.3 * F.smooth_l1_loss(input_flow[fg_valid], target_flow[fg_valid], size_average=True)
     
     target_valid = target_flow < 192
-    return F.smooth_l1_loss(input_flow[target_valid], target_flow[target_valid], size_average=True)
+    return F.l1_loss(input_flow[target_valid], target_flow[target_valid], size_average=True)
 
     #return F.smooth_l1_loss(input_flow, target_flow, size_average=True)
 
@@ -52,8 +40,8 @@ class MultiScaleLoss(nn.Module):
                 self.loss = MAPELoss()
         else:
             self.loss = loss
-        self.multiScales = [nn.AvgPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
-        #self.multiScales = [nn.MaxPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
+        #self.multiScales = [nn.AvgPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
+        self.multiScales = [nn.MaxPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
         #self.multiScales = [nn.Upsample(scale_factor=self.downscale*(2**i), mode='bilinear', align_corners=True) for i in range(scales)]
         print('self.multiScales: ', self.multiScales, ' self.downscale: ', self.downscale)
         # self.multiScales = [nn.functional.adaptive_avg_pool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
@@ -74,22 +62,22 @@ class MultiScaleLoss(nn.Module):
                 #target_ = self.multiScales[i](target) / (2**i)
                 #print('target shape: ', target_.shape, ' input shape: ', input_.shape)
                 if self.mask:
-                    # work for sparse
-                    mask = target > 0
-                    mask.detach_()
-                    
-                    mask = mask.type(torch.cuda.FloatTensor)
-                    pooling_mask = self.multiScales[i](mask) 
+                    ## work for sparse
+                    #mask = target > 0
+                    #mask.detach_()
+                    #
+                    #mask = mask.type(torch.cuda.FloatTensor)
+                    #pooling_mask = self.multiScales[i](mask) 
 
-                    # use unbalanced avg
-                    target_ = target_ / pooling_mask
+                    ## use unbalanced avg
+                    #target_ = target_ / pooling_mask
 
                     mask = target_ > 0
                     mask.detach_()
                     input_ = input_[mask]
                     target_ = target_[mask]
 
-                EPE_ = EPE(input_, target_)
+                EPE_ = SL_EPE(input_, target_)
                 out += self.weights[i] * EPE_
         else:
             out = self.loss(input, self.multiScales[0](target))

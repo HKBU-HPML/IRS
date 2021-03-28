@@ -83,10 +83,10 @@ class SintelDataset(Dataset):
                 gt_disp = load_exr(filename)
             else:
                 f_in = np.array(Image.open(gt_disp_name))
-		d_r = f_in[:,:,0].astype('float32')
-		d_g = f_in[:,:,1].astype('float32')
-		d_b = f_in[:,:,2].astype('float32')
-		gt_disp = d_r * 4 + d_g / (2**6) + d_b / (2**14)
+                d_r = f_in[:,:,0].astype('float32')
+                d_g = f_in[:,:,1].astype('float32')
+                d_b = f_in[:,:,2].astype('float32')
+                gt_disp = d_r * 4 + d_g / (2**6) + d_b / (2**14)
 
             return gt_disp
 
@@ -103,8 +103,8 @@ class SintelDataset(Dataset):
                 #m[:,:,0] = False
                 #m[:,:,1] = False
                 #gt_norm[m] = - gt_norm[m]
-		is_nan = np.isnan(gt_norm)
-		gt_norm[is_nan] = 1.0
+                is_nan = np.isnan(gt_norm)
+                gt_norm[is_nan] = 1.0
 
             return gt_norm
 

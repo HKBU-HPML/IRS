@@ -2,16 +2,22 @@ from __future__ import print_function
 
 from networks.DispNetC import DispNetC
 from networks.DispNetCSS import DispNetCSS
-from networks.DispNetCSRes import DispNetCSRes
-from networks.DispNormNet import DispNormNet
+from networks.DNFusionNet import DNFusionNet
+from networks.DToNNet import DToNNet
+from networks.NormNetS import NormNetS
+from networks.FADNet import FADNet
+from networks.gwcnet import GwcNet
 
 from utils.common import logger
 
 SUPPORT_NETS = {
-        'dispnetcres': DispNetCSRes,
         'dispnetc': DispNetC,
         'dispnetcss': DispNetCSS,
-        'dispnormnet':DispNormNet,
+        'fadnet': FADNet,
+        'dnfusionnet':DNFusionNet,
+        'dtonnet':DToNNet,
+        'normnets':NormNetS,
+        'gwcnet':GwcNet,
         }
 
 def build_net(net_name):

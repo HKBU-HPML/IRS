@@ -1,4 +1,4 @@
-dnn="${dnn:-dispnormnet}"
+dnn="${dnn:-dtonnet}"
 source exp_configs/$dnn.conf
 
 python main.py --cuda --net $net --loss $loss --lr $lr \
