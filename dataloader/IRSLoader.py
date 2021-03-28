@@ -11,7 +11,7 @@ from torchvision import transforms
 import time
 from dataloader.EXRloader import load_exr
 
-class SIRSDataset(Dataset):
+class IRSDataset(Dataset):
 
     def __init__(self, txt_file, root_dir, phase='train', load_disp=True, load_norm=True, to_angle=False, scale_size=(576, 960)):
         """
