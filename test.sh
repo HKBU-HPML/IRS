@@ -16,7 +16,7 @@ startR=0
 startE=0
 endE=0
 lr=1e-4
-model=models/fadnet-ft3d-irs.pth
+model=models/fadnet-irs.pth
 python main.py --cuda --net $net --loss $loss --lr $lr \
                --outf $outf_model --logFile $logf \
                --devices $devices --batch_size $batchSize \

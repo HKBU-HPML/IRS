@@ -14,11 +14,6 @@ def EPE(input_flow, target_flow):
     target_valid = target_flow < 192
     return F.l1_loss(input_flow[target_valid], target_flow[target_valid], size_average=True)
 
-    #return F.smooth_l1_loss(input_flow, target_flow, size_average=True)
-
-    #EPE_map = torch.norm(target_flow - input_flow + 1e-16, 2, 1)
-    #return EPE_map.mean()
-
 class MultiScaleLoss(nn.Module):
 
     def __init__(self, scales, downscale, weights=None, loss='L1', mask=False):
@@ -40,37 +35,25 @@ class MultiScaleLoss(nn.Module):
                 self.loss = MAPELoss()
         else:
             self.loss = loss
-        #self.multiScales = [nn.AvgPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
-        self.multiScales = [nn.MaxPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
-        #self.multiScales = [nn.Upsample(scale_factor=self.downscale*(2**i), mode='bilinear', align_corners=True) for i in range(scales)]
+        self.multiScales = [nn.AvgPool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
         print('self.multiScales: ', self.multiScales, ' self.downscale: ', self.downscale)
-        # self.multiScales = [nn.functional.adaptive_avg_pool2d(self.downscale*(2**i), self.downscale*(2**i)) for i in range(scales)]
 
     def forward(self, input, target):
-        #print(len(input))
         if (type(input) is tuple) or (type(input) is list):
             out = 0
           
-            #for i, input_ in enumerate(input):
-            #    print(i, len(input_))
-            #    print(input_[0].size())
             for i, input_ in enumerate(input):
-                #target_ = target.clone()
-                #input_ = self.multiScales[i](input_)
                 target_ = self.multiScales[i](target)
-                ## consider the scale effects
-                #target_ = self.multiScales[i](target) / (2**i)
-                #print('target shape: ', target_.shape, ' input shape: ', input_.shape)
                 if self.mask:
-                    ## work for sparse
-                    #mask = target > 0
-                    #mask.detach_()
-                    #
-                    #mask = mask.type(torch.cuda.FloatTensor)
-                    #pooling_mask = self.multiScales[i](mask) 
+                    # work for sparse
+                    mask = target > 0
+                    mask.detach_()
+                    
+                    mask = mask.type(torch.cuda.FloatTensor)
+                    pooling_mask = self.multiScales[i](mask) 
 
-                    ## use unbalanced avg
-                    #target_ = target_ / pooling_mask
+                    # use unbalanced avg
+                    target_ = target_ / pooling_mask
 
                     mask = target_ > 0
                     mask.detach_()
