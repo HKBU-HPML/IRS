@@ -121,7 +121,7 @@ data
 ### Pretrained Model
 "FT3D" denotes FlyingThings3D.
 
-|| IRS | FT3D | IRS+FT3D |
+| | IRS | FT3D | IRS+FT3D |
 |FADNet|[fadnet-ft3d.pth](https://drive.google.com/file/d/1XH0l9wS-CDfVCQJDE1CZOx-g0qgb4VmE/view?usp=sharing)|[fadnet-irs.pth](https://drive.google.com/file/d/13mKnv4Z19jpxu_t3gWstrPAx3Cqaxq04/view?usp=sharing)|[fadnet-ft3d-irs.pth](https://drive.google.com/file/d/1EPkCeedWFo0xqL4W1Zoe9VTde4zv8bKT/view?usp=sharing)|
 |GwcNet|[gwcnet-ft3d](https://drive.google.com/file/d/1Ptk92srE_WicztONIm1m0vm6edsgllac/view?usp=sharing|[gwcnet-irs](https://drive.google.com/file/d/1Y7RVxWOGOHqAY7J2y52RzvukIySETgzs/view?usp=sharing)|[gwcnet-ft3d-irs](https://drive.google.com/file/d/1YTsDlyFr8FjqCjBE8AJkt2UaTWgBbUG1/view?usp=sharing)|
 
