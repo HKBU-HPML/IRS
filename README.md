@@ -126,6 +126,11 @@ data
 |FADNet|[fadnet-ft3d.pth](https://drive.google.com/file/d/1XH0l9wS-CDfVCQJDE1CZOx-g0qgb4VmE/view?usp=sharing)|[fadnet-irs.pth](https://drive.google.com/file/d/13mKnv4Z19jpxu_t3gWstrPAx3Cqaxq04/view?usp=sharing)|[fadnet-ft3d-irs.pth](https://drive.google.com/file/d/1EPkCeedWFo0xqL4W1Zoe9VTde4zv8bKT/view?usp=sharing)|
 |GwcNet|[gwcnet-ft3d.pth](https://drive.google.com/file/d/1Ptk92srE_WicztONIm1m0vm6edsgllac/view?usp=sharing)|[gwcnet-irs.pth](https://drive.google.com/file/d/1Y7RVxWOGOHqAY7J2y52RzvukIySETgzs/view?usp=sharing)|[gwcnet-ft3d-irs.pth](https://drive.google.com/file/d/1YTsDlyFr8FjqCjBE8AJkt2UaTWgBbUG1/view?usp=sharing)|
 
+| | DTN-Net | DNF-Net | NormNetS |
+|---|---|---|---|
+|IRS|[dtonnet-irs.pth](https://drive.google.com/file/d/1jdg35tPK7Ii2bYL-q1WIDpFhJY8l2RJK/view?usp=sharing)|[dnfusionnet-irs.pth](https://drive.google.com/file/d/1xnT-0aaVLKjb4engBiZXPRFui3GEH_GN/view?usp=sharing)|[normnets-irs.pth](https://drive.google.com/file/d/1PZub6sQKeHH9HP9JjzQ_fmJXZ6y_u2Lu/view?usp=sharing)|
+
+
 ### Train
 
 There are configurations for train in "exp_configs" folder. You can create your own configuration file as samples. \
