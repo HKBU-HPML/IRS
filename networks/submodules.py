@@ -368,12 +368,12 @@ def disp2norm(disp, fx, fy):
     dx = (disp[:, :, :, :-2] - disp[:, :, :, 2:]) * 0.5
     dy = (disp[:, :, :-2, :] - disp[:, :, 2:, :]) * 0.5
 
-    nx = -fx * dx / torch.abs(disp[:,:,:,1:-1] - xc[:,:,:,1:-1] * dx)
-    ny = -fy * dy / torch.abs(disp[:,:,1:-1,:] - yc[:,:,1:-1,:] * dy)
-    #divider_nx = torch.clamp(torch.abs(disp[:,:,:,1:-1] - xc[:,:,:,1:-1] * dx), 1e-8, 1e+16)
-    #divider_ny = torch.clamp(torch.abs(disp[:,:,1:-1,:] - yc[:,:,1:-1,:] * dy), 1e-8, 1e+16)
-    #nx = fx * dx / divider_nx
-    #ny = fy * dy / divider_ny
+    #nx = -fx * dx / torch.abs(disp[:,:,:,1:-1] - xc[:,:,:,1:-1] * dx)
+    #ny = -fy * dy / torch.abs(disp[:,:,1:-1,:] - yc[:,:,1:-1,:] * dy)
+    divider_nx = torch.clamp(torch.abs(disp[:,:,:,1:-1] - xc[:,:,:,1:-1] * dx), 1e-8, 1e+16)
+    divider_ny = torch.clamp(torch.abs(disp[:,:,1:-1,:] - yc[:,:,1:-1,:] * dy), 1e-8, 1e+16)
+    nx = fx * dx / divider_nx
+    ny = fy * dy / divider_ny
     nz = -torch.ones(n, 1, h, w).float().to(cur_device)
 
     nx = F.pad(nx, (1, 1, 0, 0), 'replicate')
@@ -384,7 +384,7 @@ def disp2norm(disp, fx, fy):
     norm = torch.cat((nx, ny, nz), dim=1)
     norm = norm / torch.norm(norm, 2, dim=1, keepdim=True)
 
-    #norm[norm < 0] += 1e-6
+    norm[norm <= 0] += 1e-6
     #print "min-max:", torch.min(norm), torch.max(norm)
     
     return norm
