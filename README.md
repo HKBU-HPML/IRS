@@ -67,7 +67,7 @@ You can use the following BaiduYun link to download our dataset. More download l
 
 BaiduYun: <a href="https://pan.baidu.com/s/1iWZt3JklcX5iXdQqotY4uA" target="_blank">https://pan.baidu.com/s/1iWZt3JklcX5iXdQqotY4uA</a> (code: gxlw)
 
-Google Drive: <a href="https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OVzCp1CI6-_e4kGtu?usp=sharing" target="_blank">https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OVzCp1CI6-_e4kGtu?usp=sharing</a>
+Google Drive: <a href="https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OVzCp1CI6-_e4kGtu" target="_blank">https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OVzCp1CI6-_e4kGtu</a>
 
 # Video Demonstration
 
