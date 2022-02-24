@@ -69,6 +69,16 @@ BaiduYun: <a href="https://pan.baidu.com/s/1iWZt3JklcX5iXdQqotY4uA" target="_bla
 
 Google Drive: <a href="https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OVzCp1CI6-_e4kGtu" target="_blank">https://drive.google.com/drive/folders/1s6zUHkyQdCfxIq4OVzCp1CI6-_e4kGtu</a>
 
+Tips for Google Drive:
+- Go to OAuth 2.0 Playground https://developers.google.com/oauthplayground/
+- In the Select the Scope box, paste https://www.googleapis.com/auth/drive.readonly
+- Click Authorize APIs and then Exchange authorization code for tokens
+- Copy the Access token
+- Run in terminal
+```
+curl -H "Authorization: Bearer ACCESS_TOKEN" https://www.googleapis.com/drive/v3/files/FILE_ID?alt=media -o FILE_NAME
+```
+
 # Video Demonstration
 
 <!--
