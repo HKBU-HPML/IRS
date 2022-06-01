@@ -24,8 +24,8 @@ light behavior|bloom(>1700), lens flare(>1700), glass transmission(>3600), mirro
 
 We give some sample of different indoor scene characteristics as follows. The parameters of the virtual stereo camera in UE4 are as follows:
 
-Baseline: 0.1 meter
-Focal Length: 480 for both the x-axis and y-axis. 
+- Baseline: 0.1 meter
+- Focal Length: 480 for both the x-axis and y-axis. 
 
 
 |<img src="/imgs/home.png" width="100%" > | <img src="/imgs/office.png" width="100%">  | <img src="/imgs/restaurant.png" width="100%" >|
